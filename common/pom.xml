@@ -9,6 +9,7 @@
         <version>0.0.1</version>
     </parent>
 
+    <groupId>com.atom.authservice</groupId>
     <artifactId>common</artifactId>
 
     <properties>

@@ -9,7 +9,9 @@
         <version>0.0.1</version>
     </parent>
 
+    <groupId>com.atom.authservice</groupId>
     <artifactId>impl</artifactId>
+    <version>0.0.1</version>
 
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
@@ -19,12 +21,12 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.atom</groupId>
+            <groupId>com.atom.authservice</groupId>
             <artifactId>api</artifactId>
             <version>0.0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>com.atom</groupId>
+            <groupId>com.atom.authservice</groupId>
             <artifactId>service</artifactId>
             <version>0.0.1</version>
         </dependency>

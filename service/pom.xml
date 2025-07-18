@@ -9,6 +9,7 @@
         <version>0.0.1</version>
     </parent>
 
+    <groupId>com.atom.authservice</groupId>
     <artifactId>service</artifactId>
 
     <properties>
@@ -19,12 +20,12 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.atom</groupId>
+            <groupId>com.atom.authservice</groupId>
             <artifactId>common</artifactId>
             <version>0.0.1</version>
         </dependency>
         <dependency>
-            <groupId>com.atom</groupId>
+            <groupId>com.atom.authservice</groupId>
             <artifactId>dal</artifactId>
             <version>0.0.1</version>
         </dependency>
