@@ -4,6 +4,6 @@ FROM openjdk:17-jdk-slim
 # 在容器中创建一个目录来存放应用程序
 RUN mkdir /app
 WORKDIR /app
-COPY web/target/web.jar /app/web.jar
+COPY bootstarp/target/authService.jar /app/authService.jar
 # 容器启动时运行的命令，启动 Spring Boot 应用程序
-CMD ["java", "-jar", "web.jar"]
+CMD ["java", "-jar", "authService.jar"]
