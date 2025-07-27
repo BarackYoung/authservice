@@ -3,6 +3,7 @@ package com.atom.authservice.service.wechat;
 import com.atom.commonsdk.wechat.anotation.WechatMsgProcessor;
 import com.atom.commonsdk.wechat.message.EventMessage;
 import com.atom.commonsdk.wechat.msgprocessor.EventMsgProcessor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 /**
@@ -13,10 +14,12 @@ import org.springframework.stereotype.Component;
  */
 @WechatMsgProcessor
 @Component
+@Slf4j
 public class EventMsgProcessorImpl implements EventMsgProcessor {
 
     @Override
-    public void process(EventMessage eventMessage) {
-
+    public String process(EventMessage eventMessage) {
+        log.info("EventMsgProcessorImpl.process, eventMessage:{}", eventMessage);
+        return "success";
     }
 }

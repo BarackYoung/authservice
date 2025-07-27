@@ -1,16 +1,6 @@
 dubbo:
   registry:
     address: nacos://172.28.1.20:8848?username=nacos&password=nacos
-    register-mode: instance
-  protocol:
-    name: tri
-    port: 50052
-  application:
-    name: authService
-    logger: slf4j
-    serialization:
-      # 关闭严格检查
-      check-status: DISABLE
 spring:
   datasource:
     url: jdbc:mysql://rm-bp146f71y348k5qjf.mysql.rds.aliyuncs.com/authservice?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC

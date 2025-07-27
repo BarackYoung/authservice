@@ -20,11 +20,6 @@
             <artifactId>impl</artifactId>
             <version>0.0.1</version>
         </dependency>
-        <dependency>
-            <groupId>com.atom.authservice</groupId>
-            <artifactId>controller</artifactId>
-            <version>0.0.1</version>
-        </dependency>
     </dependencies>
 
     <build>

@@ -1,3 +1,15 @@
+dubbo:
+  registry:
+    register-mode: instance
+  protocol:
+    name: tri
+    port: 50052
+  application:
+    name: authService
+    logger: slf4j
+    serialization:
+      # 关闭严格检查
+      check-status: DISABLE
 spring:
   profiles:
     active: ${ENV:dev}

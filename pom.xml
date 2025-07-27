@@ -22,7 +22,6 @@
         <module>service</module>
         <module>common</module>
         <module>impl</module>
-        <module>controller</module>
     </modules>
     <dependencies>
         <dependency>
@@ -131,7 +130,7 @@
             <dependency>
                 <groupId>com.atom.commonsdk</groupId>
                 <artifactId>wechat</artifactId>
-                <version>20250716-SNAPSHOT</version>
+                <version>20250727-SNAPSHOT</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
