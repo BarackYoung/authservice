@@ -42,8 +42,10 @@ public class PublicAccountMsgImpl implements PublicAccountMsgAPI {
         verifyInfo.setSignature(signature);
         log.info("wechat.public.verifyInfo:{}", verifyInfo);
         if (wechatMsgService.verify(verifyInfo)) {
+            log.info("wechatMsg.verify.res:{}", true);
             return echostr;
         }
+        log.info("wechatMsg.verify.res:{}", false);
         return StringUtils.EMPTY; // 验证失败
     }
 
