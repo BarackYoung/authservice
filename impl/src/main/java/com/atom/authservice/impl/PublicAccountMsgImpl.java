@@ -53,10 +53,10 @@ public class PublicAccountMsgImpl implements PublicAccountMsgAPI {
         verifyInfo.setNonce(nonce);
         verifyInfo.setSignature(signature);
         verifyInfo.setToken(publicAccountToken);
-//        if (!wechatMsgService.verify(verifyInfo)) {
-//            log.error("PublicAccountMsgController.wechatMsg,invalid msg,ip:{}", request.remoteAddr());
-//            return StringUtils.EMPTY;
-//        }
+        if (!wechatMsgService.verify(verifyInfo)) {
+            log.error("PublicAccountMsgController.wechatMsg,invalid msg,ip:{}", request.remoteAddr());
+            return StringUtils.EMPTY;
+        }
         return wechatMsgService.process(request.inputStream());
     }
 }
