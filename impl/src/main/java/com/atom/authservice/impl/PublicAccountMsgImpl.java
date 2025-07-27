@@ -40,6 +40,7 @@ public class PublicAccountMsgImpl implements PublicAccountMsgAPI {
         verifyInfo.setNonce(nonce);
         verifyInfo.setTimestamp(timestamp);
         verifyInfo.setSignature(signature);
+        log.info("wechat.public.verifyInfo:{}", verifyInfo);
         if (wechatMsgService.verify(verifyInfo)) {
             return echostr;
         }
