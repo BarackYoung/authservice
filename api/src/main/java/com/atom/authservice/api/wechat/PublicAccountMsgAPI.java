@@ -16,9 +16,9 @@ public interface PublicAccountMsgAPI {
 
     @Mapping(path = "/msg", method = HttpMethods.GET)
     String wechatMsg(@Param(value = "signature", required = false) String signature,
-                     @Param(value = "timestamp", required = false) String timestamp,
-                     @Param(value = "nonce", required = false) String nonce,
-                     @Param(value = "echostr", required = false) String echostr);
+                       @Param(value = "timestamp", required = false) String timestamp,
+                       @Param(value = "nonce", required = false) String nonce,
+                       @Param(value = "echostr", required = false) String echostr);
 
     @Mapping(path = "/msg", method = HttpMethods.POST)
     String wechatMsg(HttpRequest request,

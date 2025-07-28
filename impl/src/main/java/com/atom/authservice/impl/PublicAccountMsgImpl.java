@@ -10,7 +10,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.config.annotation.DubboService;
 import org.apache.dubbo.remoting.http12.HttpRequest;
+import org.apache.dubbo.remoting.http12.HttpResponse;
+import org.apache.dubbo.rpc.RpcContext;
 import org.springframework.beans.factory.annotation.Value;
+
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
 /**
  * PublicAccountMsgImpl
@@ -21,6 +26,7 @@ import org.springframework.beans.factory.annotation.Value;
 @DubboService
 @Slf4j
 public class PublicAccountMsgImpl implements PublicAccountMsgAPI {
+    private static final String SUCCESS = "success";
 
     @Resource
     private WechatMsgService wechatMsgService;
@@ -39,13 +45,17 @@ public class PublicAccountMsgImpl implements PublicAccountMsgAPI {
         verifyInfo.setNonce(nonce);
         verifyInfo.setTimestamp(timestamp);
         verifyInfo.setSignature(signature);
-        log.info("wechat.public.verifyInfo:{}", verifyInfo);
+        HttpResponse response = RpcContext.getServiceContext().getResponse(HttpResponse.class);
         if (wechatMsgService.verify(verifyInfo)) {
-            log.info("wechatMsg.verify.res:{}", true);
-            return echostr;
+            try (OutputStream outputStream = response.outputStream()) {
+                outputStream.write(echostr.getBytes(StandardCharsets.UTF_8));
+                response.commit();
+            } catch (Exception e) {
+                log.error("PublicAccountMsgImpl.wechatMsg.verify.error", e);
+            }
         }
         log.info("wechatMsg.verify.res:{}", false);
-        return StringUtils.EMPTY; // 验证失败
+        return StringUtils.EMPTY;
     }
 
     @Override
@@ -55,10 +65,18 @@ public class PublicAccountMsgImpl implements PublicAccountMsgAPI {
         verifyInfo.setNonce(nonce);
         verifyInfo.setSignature(signature);
         verifyInfo.setToken(publicAccountToken);
-        if (!wechatMsgService.verify(verifyInfo)) {
+        if (wechatMsgService.verify(verifyInfo)) {
+            String result = wechatMsgService.process(request.inputStream());
+            HttpResponse response = RpcContext.getServiceContext().getResponse(HttpResponse.class);
+            try  (OutputStream outputStream = response.outputStream()){
+                outputStream.write(result.getBytes(StandardCharsets.UTF_8));
+                response.commit();
+            } catch (Exception e) {
+                log.error("PublicAccountMsgImpl.wechatMsg.verify.error", e);
+            }
+        } else {
             log.error("PublicAccountMsgController.wechatMsg,invalid msg,ip:{}", request.remoteAddr());
-            return StringUtils.EMPTY;
         }
-        return wechatMsgService.process(request.inputStream());
+        return StringUtils.EMPTY;
     }
 }
