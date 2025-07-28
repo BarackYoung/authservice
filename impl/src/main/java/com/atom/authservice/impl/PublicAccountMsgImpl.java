@@ -30,13 +30,12 @@ public class PublicAccountMsgImpl implements PublicAccountMsgAPI {
 
     @Override
     public String wechatMsg(String signature, String timestamp, String nonce, String echostr) {
-        log.info("wechatMsg.signature:{}, timestamp:{}, nonce:{}", signature, timestamp, nonce);
+        log.info("wechatMsg.signature:{}, timestamp:{}, nonce:{}, echostr:{}", signature, timestamp, nonce, echostr);
         if (StringUtils.isAnyEmpty(signature, timestamp, nonce, echostr)) {
             throw new BusinessException(ResultCode.INVALID_PARAMS);
         }
         VerifyInfo verifyInfo = new VerifyInfo();
         verifyInfo.setToken(publicAccountToken);
-        verifyInfo.setEchostr(echostr);
         verifyInfo.setNonce(nonce);
         verifyInfo.setTimestamp(timestamp);
         verifyInfo.setSignature(signature);
