@@ -17,7 +17,6 @@ import org.apache.dubbo.remoting.http12.HttpResponse;
 import org.apache.dubbo.rpc.RpcContext;
 import org.springframework.beans.factory.annotation.Value;
 
-import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
@@ -53,7 +52,7 @@ public class PublicAccountMsgImpl implements PublicAccountMsgAPI {
     }
 
     @Override
-    public String wechatMsg(HttpRequest request, String signature, String timestamp, String nonce, String echostr, String msgSignature) {
+    public String wechatMsg(String signature, String timestamp, String nonce, String echostr) {
         log.info("wechatMsg.signature:{}, timestamp:{}, nonce:{}, echostr:{}", signature, timestamp, nonce, echostr);
         if (StringUtils.isAnyEmpty(signature, timestamp, nonce, echostr)) {
             throw new BusinessException(ResultCode.INVALID_PARAMS);
@@ -64,32 +63,32 @@ public class PublicAccountMsgImpl implements PublicAccountMsgAPI {
         verifyInfo.setTimestamp(timestamp);
         verifyInfo.setSignature(signature);
 
-        // 配置请求
-        if (StringUtils.isEmpty(msgSignature)) {
-            HttpResponse response = RpcContext.getServiceContext().getResponse(HttpResponse.class);
-            if (wechatMsgService.verify(verifyInfo)) {
-                try (OutputStream outputStream = response.outputStream()) {
-                    outputStream.write(echostr.getBytes(StandardCharsets.UTF_8));
-                    response.commit();
-                } catch (Exception e) {
-                    log.error("PublicAccountMsgImpl.wechatMsg.verify.error", e);
-                }
-            } else {
-                log.info("wechatMsg.verify.res:{}", false);
-                return null;
+        HttpResponse response = RpcContext.getServiceContext().getResponse(HttpResponse.class);
+        if (wechatMsgService.verify(verifyInfo)) {
+            try (OutputStream outputStream = response.outputStream()) {
+                outputStream.write(echostr.getBytes(StandardCharsets.UTF_8));
+                response.commit();
+            } catch (Exception e) {
+                log.error("PublicAccountMsgImpl.wechatMsg.verify.error", e);
             }
-        }
-
-        // 消息推送
-        try {
-            byte[] bytes = request.inputStream().readAllBytes();
-            String encryptMsgBody = new String(bytes, StandardCharsets.UTF_8);
-            log.info("PublicAccountMsgImpl.encryptMsgBody:{}", encryptMsgBody);
-            String decryptMsgBody = wxBizMsgCrypt.decryptMsg(msgSignature, timestamp, nonce, encryptMsgBody);
-            log.info("PublicAccountMsgImpl.decryptMsgBody:{}", decryptMsgBody);
-        } catch (IOException | AesException e) {
-            throw new BusinessException(ResultCode.SYSTEM_ERROR);
+        } else {
+            log.info("wechatMsg.verify.res:{}", false);
+            return null;
         }
         return StringUtils.EMPTY;
+    }
+
+    @Override
+    public String wechatMsg(HttpRequest request, String signature, String timestamp, String nonce, String msgSignature) {
+        try {
+            byte[] requestData = request.inputStream().readAllBytes();
+            String postData = new String(requestData, StandardCharsets.UTF_8);
+            log.info("PublicAccountMsgImpl.postData:{}", postData);
+            String decryptStr = wxBizMsgCrypt.decryptMsg(msgSignature, timestamp, nonce, postData);
+            log.info("PublicAccountMsgImpl.decryptStr:{}", decryptStr);
+        } catch (Exception e) {
+            throw new BusinessException(ResultCode.SYSTEM_ERROR);
+        }
+        return "";
     }
 }

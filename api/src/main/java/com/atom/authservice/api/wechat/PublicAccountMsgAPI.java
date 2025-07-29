@@ -15,10 +15,15 @@ import org.apache.dubbo.remoting.http12.rest.Param;
 public interface PublicAccountMsgAPI {
 
     @Mapping(path = "/msg", method = HttpMethods.GET)
-    String wechatMsg(HttpRequest request,
-                       @Param(value = "signature", required = false) String signature,
+    String wechatMsg(@Param(value = "signature", required = false) String signature,
                        @Param(value = "timestamp", required = false) String timestamp,
                        @Param(value = "nonce", required = false) String nonce,
-                       @Param(value = "echostr", required = false) String echostr,
-                       @Param(value = "msg_signature") String msgSignature);
+                       @Param(value = "echostr", required = false) String echostr);
+
+    @Mapping(path = "/msg", method = HttpMethods.POST)
+    String wechatMsg(HttpRequest request,
+                     @Param(value = "signature", required = false) String signature,
+                     @Param(value = "timestamp", required = false) String timestamp,
+                     @Param(value = "nonce", required = false) String nonce,
+                     @Param(value = "msg_signature") String msgSignature);
 }
