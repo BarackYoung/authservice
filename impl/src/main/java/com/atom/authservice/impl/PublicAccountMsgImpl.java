@@ -1,12 +1,13 @@
 package com.atom.authservice.impl;
 
-import com.alibaba.fastjson2.JSON;
 import com.atom.authservice.api.wechat.PublicAccountMsgAPI;
 import com.atom.commonsdk.exception.BusinessException;
 import com.atom.commonsdk.model.ResultCode;
 import com.atom.commonsdk.wechat.WechatMsgService;
 import com.atom.commonsdk.wechat.bean.VerifyInfo;
-import com.atom.commonsdk.wechat.enums.BodyFormat;
+import com.atom.commonsdk.wechat.crypt.AesException;
+import com.atom.commonsdk.wechat.crypt.WXBizMsgCrypt;
+import jakarta.annotation.PostConstruct;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -16,11 +17,9 @@ import org.apache.dubbo.remoting.http12.HttpResponse;
 import org.apache.dubbo.rpc.RpcContext;
 import org.springframework.beans.factory.annotation.Value;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
 
 /**
  * PublicAccountMsgImpl
@@ -40,8 +39,21 @@ public class PublicAccountMsgImpl implements PublicAccountMsgAPI {
     @Value("${wechat.public.account.token}")
     private String publicAccountToken;
 
+    @Value("${wechat.public.account.encrypt}")
+    private String publicAccountEncrypt;
+
+    @Value("${wechat.public.account.appid}")
+    private String publicAccountAppid;
+
+    private WXBizMsgCrypt wxBizMsgCrypt;
+
+    @PostConstruct
+    public void init() throws AesException {
+        this.wxBizMsgCrypt = new WXBizMsgCrypt(this.publicAccountToken, this.publicAccountEncrypt, this.publicAccountAppid);
+    }
+
     @Override
-    public String wechatMsg(String signature, String timestamp, String nonce, String echostr) {
+    public String wechatMsg(HttpRequest request, String signature, String timestamp, String nonce, String echostr, String msgSignature) {
         log.info("wechatMsg.signature:{}, timestamp:{}, nonce:{}, echostr:{}", signature, timestamp, nonce, echostr);
         if (StringUtils.isAnyEmpty(signature, timestamp, nonce, echostr)) {
             throw new BusinessException(ResultCode.INVALID_PARAMS);
@@ -51,42 +63,32 @@ public class PublicAccountMsgImpl implements PublicAccountMsgAPI {
         verifyInfo.setNonce(nonce);
         verifyInfo.setTimestamp(timestamp);
         verifyInfo.setSignature(signature);
-        HttpResponse response = RpcContext.getServiceContext().getResponse(HttpResponse.class);
-        if (wechatMsgService.verify(verifyInfo)) {
-            try (OutputStream outputStream = response.outputStream()) {
-                outputStream.write(echostr.getBytes(StandardCharsets.UTF_8));
-                response.commit();
-            } catch (Exception e) {
-                log.error("PublicAccountMsgImpl.wechatMsg.verify.error", e);
+
+        // 配置请求
+        if (StringUtils.isEmpty(msgSignature)) {
+            HttpResponse response = RpcContext.getServiceContext().getResponse(HttpResponse.class);
+            if (wechatMsgService.verify(verifyInfo)) {
+                try (OutputStream outputStream = response.outputStream()) {
+                    outputStream.write(echostr.getBytes(StandardCharsets.UTF_8));
+                    response.commit();
+                } catch (Exception e) {
+                    log.error("PublicAccountMsgImpl.wechatMsg.verify.error", e);
+                }
+            } else {
+                log.info("wechatMsg.verify.res:{}", false);
+                return null;
             }
         }
-        log.info("wechatMsg.verify.res:{}", false);
-        return StringUtils.EMPTY;
-    }
 
-    @Override
-    public String wechatMsg(HttpRequest request, String msgSignature, String timestamp, String nonce) {
-        VerifyInfo verifyInfo = new VerifyInfo();
-        verifyInfo.setTimestamp(timestamp);
-        verifyInfo.setNonce(nonce);
-        verifyInfo.setMsg_signature(msgSignature);
-        verifyInfo.setToken(publicAccountToken);
-        Map<String, String> msgBody = JSON.parseObject(request.inputStream(), Map.class);
-        String encrypt = msgBody.get(ENCRYPT_KW);
-        verifyInfo.setEncrypt(encrypt);
-        log.info("PublicAccountMsgImpl.wechatMsg,verifyInfo:{}", verifyInfo);
-        InputStream inputStream = new ByteArrayInputStream(JSON.toJSONString(msgBody).getBytes(StandardCharsets.UTF_8));
-        if (wechatMsgService.verifySafeMode(verifyInfo)) {
-            String result = wechatMsgService.process(BodyFormat.JSON, inputStream);
-            HttpResponse response = RpcContext.getServiceContext().getResponse(HttpResponse.class);
-            try  (OutputStream outputStream = response.outputStream()){
-                outputStream.write(result.getBytes(StandardCharsets.UTF_8));
-                response.commit();
-            } catch (Exception e) {
-                log.error("PublicAccountMsgImpl.wechatMsg.verify.error", e);
-            }
-        } else {
-            log.error("PublicAccountMsgController.wechatMsg,invalid msg,ip:{}", request.remoteAddr());
+        // 消息推送
+        try {
+            byte[] bytes = request.inputStream().readAllBytes();
+            String encryptMsgBody = new String(bytes, StandardCharsets.UTF_8);
+            log.info("PublicAccountMsgImpl.encryptMsgBody:{}", encryptMsgBody);
+            String decryptMsgBody = wxBizMsgCrypt.decryptMsg(msgSignature, timestamp, nonce, encryptMsgBody);
+            log.info("PublicAccountMsgImpl.decryptMsgBody:{}", decryptMsgBody);
+        } catch (IOException | AesException e) {
+            throw new BusinessException(ResultCode.SYSTEM_ERROR);
         }
         return StringUtils.EMPTY;
     }
