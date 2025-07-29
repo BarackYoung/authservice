@@ -22,7 +22,7 @@ public interface PublicAccountMsgAPI {
 
     @Mapping(path = "/msg", method = HttpMethods.POST)
     String wechatMsg(HttpRequest request,
-                   @Param("signature") String signature,
+                   @Param("msg_signature") String msgSignature,
                    @Param("timestamp") String timestamp,
                    @Param("nonce") String nonce);
 }
