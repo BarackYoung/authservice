@@ -79,12 +79,14 @@ public class PublicAccountMsgImpl implements PublicAccountMsgAPI {
             WechatMsg wechatMsg = new WechatMsg();
             wechatMsg.setMsg_signature(msgSignature);
             wechatMsg.setNonce(nonce);
+            wechatMsg.setToken(publicAccountToken);
             wechatMsg.setTimestamp(timestamp);
             wechatMsg.setSignature(signature);
             wechatMsg.setCryptType(CryptType.ENCODED);
             wechatMsg.setXmlMsgContent(postData);
             return wechatMsgService.process(wechatMsg);
         } catch (Exception e) {
+            log.info("PublicAccountMsgImpl.wechatMsg.process.error", e);
             throw new BusinessException(ResultCode.SYSTEM_ERROR);
         }
     }
