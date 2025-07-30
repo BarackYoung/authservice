@@ -1,5 +1,6 @@
 package com.atom.authservice.service.wechat;
 
+import com.alibaba.fastjson2.JSON;
 import com.atom.commonsdk.wechat.anotation.WechatMsgProcessor;
 import com.atom.commonsdk.wechat.message.EventMessage;
 import com.atom.commonsdk.wechat.msgprocessor.EventMsgProcessor;
@@ -19,7 +20,7 @@ public class EventMsgProcessorImpl implements EventMsgProcessor {
 
     @Override
     public String process(EventMessage eventMessage) {
-        log.info("EventMsgProcessorImpl.process, eventMessage:{}", eventMessage);
+        log.info("EventMsgProcessorImpl.process, eventMessage:{}", JSON.toJSONString(eventMessage));
         return "success";
     }
 }
