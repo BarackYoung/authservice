@@ -12,7 +12,6 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.config.annotation.DubboService;
-import org.apache.dubbo.remoting.http12.HttpRequest;
 import org.apache.dubbo.remoting.http12.HttpResponse;
 import org.apache.dubbo.rpc.RpcContext;
 import org.springframework.beans.factory.annotation.Value;
@@ -79,10 +78,8 @@ public class PublicAccountMsgImpl implements PublicAccountMsgAPI {
     }
 
     @Override
-    public String wechatMsg(HttpRequest request, String signature, String timestamp, String nonce, String msgSignature) {
+    public String wechatMsg(String signature, String timestamp, String nonce, String msgSignature, String postData) {
         try {
-            byte[] requestData = request.inputStream().readAllBytes();
-            String postData = new String(requestData, StandardCharsets.UTF_8);
             log.info("PublicAccountMsgImpl.postData:{}", postData);
             String decryptStr = wxBizMsgCrypt.decryptMsg(msgSignature, timestamp, nonce, postData);
             log.info("PublicAccountMsgImpl.decryptStr:{}", decryptStr);
