@@ -130,7 +130,7 @@
             <dependency>
                 <groupId>com.atom.commonsdk</groupId>
                 <artifactId>wechat</artifactId>
-                <version>20250730.3-SNAPSHOT</version>
+                <version>20250730.4-SNAPSHOT</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
