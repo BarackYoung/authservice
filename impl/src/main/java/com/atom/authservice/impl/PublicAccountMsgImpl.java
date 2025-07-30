@@ -5,17 +5,18 @@ import com.atom.commonsdk.exception.BusinessException;
 import com.atom.commonsdk.model.ResultCode;
 import com.atom.commonsdk.wechat.WechatMsgService;
 import com.atom.commonsdk.wechat.bean.VerifyInfo;
-import com.atom.commonsdk.wechat.crypt.AesException;
-import com.atom.commonsdk.wechat.crypt.WXBizMsgCrypt;
-import jakarta.annotation.PostConstruct;
+import com.atom.commonsdk.wechat.bean.WechatMsg;
+import com.atom.commonsdk.wechat.enums.CryptType;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.config.annotation.DubboService;
+import org.apache.dubbo.remoting.http12.HttpRequest;
 import org.apache.dubbo.remoting.http12.HttpResponse;
 import org.apache.dubbo.rpc.RpcContext;
 import org.springframework.beans.factory.annotation.Value;
 
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
@@ -42,13 +43,6 @@ public class PublicAccountMsgImpl implements PublicAccountMsgAPI {
 
     @Value("${wechat.public.account.appid}")
     private String publicAccountAppid;
-
-    private WXBizMsgCrypt wxBizMsgCrypt;
-
-    @PostConstruct
-    public void init() throws AesException {
-        this.wxBizMsgCrypt = new WXBizMsgCrypt(this.publicAccountToken, this.publicAccountEncrypt, this.publicAccountAppid);
-    }
 
     @Override
     public String wechatMsg(String signature, String timestamp, String nonce, String echostr) {
@@ -78,14 +72,20 @@ public class PublicAccountMsgImpl implements PublicAccountMsgAPI {
     }
 
     @Override
-    public String wechatMsg(String signature, String timestamp, String nonce, String msgSignature, String postData) {
-        try {
+    public String wechatMsg(String signature, String timestamp, String nonce, String msgSignature, HttpRequest request) {
+        try (InputStream inputStream = request.inputStream()) {
+            String postData = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
             log.info("PublicAccountMsgImpl.postData:{}", postData);
-            String decryptStr = wxBizMsgCrypt.decryptMsg(msgSignature, timestamp, nonce, postData);
-            log.info("PublicAccountMsgImpl.decryptStr:{}", decryptStr);
+            WechatMsg wechatMsg = new WechatMsg();
+            wechatMsg.setMsg_signature(msgSignature);
+            wechatMsg.setNonce(nonce);
+            wechatMsg.setTimestamp(timestamp);
+            wechatMsg.setSignature(signature);
+            wechatMsg.setCryptType(CryptType.ENCODED);
+            wechatMsg.setXmlMsgContent(postData);
+            return wechatMsgService.process(wechatMsg);
         } catch (Exception e) {
             throw new BusinessException(ResultCode.SYSTEM_ERROR);
         }
-        return "";
     }
 }

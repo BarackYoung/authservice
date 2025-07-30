@@ -25,5 +25,5 @@ public interface PublicAccountMsgAPI {
                      @Param(value = "timestamp", required = false) String timestamp,
                      @Param(value = "nonce", required = false) String nonce,
                      @Param(value = "msg_signature") String msgSignature,
-                     String postData);
+                     HttpRequest request);
 }
