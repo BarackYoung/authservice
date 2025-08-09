@@ -106,6 +106,7 @@ public class LoginServiceImpl implements LoginService {
                 .loginId(sceneStr)
                 .url(createQrCodeResponse.getUrl())
                 .expireTime(createQrCodeResponse.getExpire_seconds())
+                .ticket(createQrCodeResponse.getTicket())
                 .build();
     }
 

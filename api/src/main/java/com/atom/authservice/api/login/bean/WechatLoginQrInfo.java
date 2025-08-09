@@ -17,4 +17,6 @@ public class WechatLoginQrInfo implements Serializable {
     private String expireTime;
 
     private String loginId;
+
+    private String ticket;
 }

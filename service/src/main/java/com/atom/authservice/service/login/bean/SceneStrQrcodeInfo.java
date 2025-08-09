@@ -21,4 +21,6 @@ public class SceneStrQrcodeInfo {
     private String expireTime;
 
     private String loginId;
+
+    private String ticket;
 }
