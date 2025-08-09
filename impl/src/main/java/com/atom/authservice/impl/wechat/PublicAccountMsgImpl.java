@@ -1,4 +1,4 @@
-package com.atom.authservice.impl;
+package com.atom.authservice.impl.wechat;
 
 import com.atom.authservice.api.wechat.PublicAccountMsgAPI;
 import com.atom.commonsdk.exception.BusinessException;
