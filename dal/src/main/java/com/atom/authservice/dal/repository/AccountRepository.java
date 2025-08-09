@@ -13,4 +13,12 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface AccountRepository extends JpaRepository<AccountEntity, Long> {
 
+    /**
+     * 通过账户ID查找
+     *
+     * @param accountId 账户ID
+     * @return 账户
+     */
+    AccountEntity findByAccountId(String accountId);
+
 }

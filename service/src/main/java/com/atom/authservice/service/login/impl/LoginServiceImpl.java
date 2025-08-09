@@ -159,6 +159,7 @@ public class LoginServiceImpl implements LoginService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public AccountEntity registerAccount(AccountEntity accountEntity, AuthPatternEntity authPatternEntity) {
+        log.info("LoginServiceImpl.registerAccount,accountEntity:{}，authPatternEntity:{}", accountEntity, authPatternEntity);
         AssertUtils.assertAllNotNull(accountEntity, authPatternEntity);
         AssertUtils.assertTrue(accountEntity.getId() == 0, ResultCode.BUSINESS_ERROR);
         AssertUtils.assertTrue(authPatternEntity.getId() == 0, ResultCode.BUSINESS_ERROR);
@@ -177,6 +178,7 @@ public class LoginServiceImpl implements LoginService {
     @Override
     public TokenInfo verifyAndSignToken(String appCode, AuthTypeEnum authType, String identifier, String credential) {
         AuthPatternEntity authPattern = authPatternRepository.findByAppCodeAndIdentifierAndAuthType(appCode, identifier, authType.name());
+        log.info("LoginServiceImpl.verifyAndSignToken,authPattern:{}", authPattern);
         if (Objects.isNull(authPattern)) {
             return null;
         }

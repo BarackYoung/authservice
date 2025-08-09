@@ -1,9 +1,11 @@
 package com.atom.authservice.service.wechat.business.impl;
 
+import cn.hutool.core.collection.CollectionUtil;
 import cn.hutool.core.util.StrUtil;
 import com.atom.authservice.dal.entity.AccountEntity;
 import com.atom.authservice.dal.entity.AppInfoEntity;
 import com.atom.authservice.dal.entity.AuthPatternEntity;
+import com.atom.authservice.dal.repository.AccountRepository;
 import com.atom.authservice.dal.repository.AppInfoRepository;
 import com.atom.authservice.dal.repository.AuthPatternRepository;
 import com.atom.authservice.service.account.AccountService;
@@ -20,12 +22,10 @@ import com.atom.commonsdk.wechat.bean.response.BatchUserInfoResp;
 import com.atom.commonsdk.wechat.message.EventMessage;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * LoginProcessorImpl
@@ -36,7 +36,7 @@ import java.util.Objects;
 @Component
 @Slf4j
 public class WechatLoginProcessorImpl implements WechatLoginProcessor {
-    private static final String LOGIN_PREFIX = "qrscene_LOGIN_";
+    private static final String LOGIN_PREFIX = "LOGIN_";
     private static final String LANG = "zh_CN";
 
     @Resource
@@ -57,26 +57,31 @@ public class WechatLoginProcessorImpl implements WechatLoginProcessor {
     @Resource
     private WechatAccessTokenHolder wechatAccessTokenHolder;
 
+    @Resource
+    private AccountRepository accountRepository;
+
     @Override
     public void processLogin(EventMessage eventMessage) {
-        String eventKey = eventMessage.getEventKey();
-        if (!StrUtil.startWith(eventKey, LOGIN_PREFIX)) {
+        log.info("WechatLoginProcessorImpl.processLogin,eventMessage={}", eventMessage);
+        String sceneStr = eventMessage.getEventKey();
+        if (!StrUtil.startWith(sceneStr, LOGIN_PREFIX)) {
             return;
         }
-        String sceneStr = eventMessage.getEventKey();
-        String[] sceneArr = sceneStr.split(StrUtil.UNDERLINE);
-        AssertUtils.assertTrue(sceneArr.length == 5, ResultCode.BUSINESS_ERROR);
-        String appShortCode = sceneArr[2];
-        String openId = eventMessage.getFromUserName();
 
         // 查询app实例配置
+        String[] sceneArr = sceneStr.split(StrUtil.UNDERLINE);
+        AssertUtils.assertTrue(sceneArr.length == 4, ResultCode.BUSINESS_ERROR);
+        String appShortCode = sceneArr[1];
         AppInfoEntity appInfoEntity = appInfoRepository.findByAppShortCode(appShortCode);
+        log.info("WechatLoginProcessorImpl.processLogin,appInfoEntity={}", appInfoEntity);
         AssertUtils.assertNotNull(appInfoEntity, ResultCode.BUSINESS_ERROR);
         AssertUtils.assertNotNull(appInfoEntity.getWePublicAccountAppId(), ResultCode.BUSINESS_ERROR);
 
         // 查询鉴权信息
+        String openId = eventMessage.getFromUserName();
         AuthPatternEntity authPatternEntity = authPatternRepository.findByAppCodeAndIdentifierAndAuthType(
                 appInfoEntity.getAppCode(), openId, AuthTypeEnum.WECHAT_PUBLIC_ACCOUNT.name());
+        log.info("WechatLoginProcessorImpl.processLogin,authPatternEntity={}", authPatternEntity);
 
         // 新用户第一次扫码，注册
         if (Objects.isNull(authPatternEntity)) {
@@ -89,10 +94,12 @@ public class WechatLoginProcessorImpl implements WechatLoginProcessor {
             }
         }
 
-        // 老用户扫码
+        // 老用户扫码，更新信息
         authPatternEntity = authPatternRepository.findByAppCodeAndIdentifierAndAuthType(
                 appInfoEntity.getAppCode(), openId, AuthTypeEnum.WECHAT_PUBLIC_ACCOUNT.name());
+        log.info("WechatLoginProcessorImpl.processLogin,authPatternEntity={}", authPatternEntity);
         AssertUtils.assertNotNull(authPatternEntity, ResultCode.BUSINESS_ERROR);
+        updateUserAuthInfo(authPatternEntity, appInfoEntity.getWePublicAccountAppId(), openId, sceneStr);
 
         // 签发token，并设置登录结果
         TokenInfo tokenInfo = loginService.verifyAndSignToken(appInfoEntity.getAppCode(),
@@ -100,9 +107,31 @@ public class WechatLoginProcessorImpl implements WechatLoginProcessor {
         loginService.setLoginResult(appInfoEntity.getAppCode(), authPatternEntity.getAccountId(), sceneStr, tokenInfo);
     }
 
-    private AccountEntity register(AppInfoEntity appInfoEntity, String openId, String sceneStr) {
-        // 查询用户信息
-        String accessToken = wechatAccessTokenHolder.getAccessToken(appInfoEntity.getWePublicAccountAppId());
+    private void updateUserAuthInfo(AuthPatternEntity authPatternEntity, String wePublicAppId, String openId, String sceneStr) {
+        // 更新鉴权信息
+        authPatternEntity.setCredential(sceneStr);
+        long currentTime = System.currentTimeMillis();
+        long expireTime = currentTime + 360000;
+        authPatternEntity.setExpireTime(new Date(expireTime));
+        authPatternRepository.save(authPatternEntity);
+
+        // 更新用户信息
+        BatchUserInfoResp batchUserInfoResp = queryUserInfo(wePublicAppId, openId);
+        AccountEntity accountEntity = accountRepository.findByAccountId(authPatternEntity.getAccountId());
+        if (Objects.nonNull(batchUserInfoResp) && CollectionUtil.isNotEmpty(batchUserInfoResp.getUser_info_list())) {
+            BatchUserInfoResp.UserInfo userInfo = batchUserInfoResp.getUser_info_list().get(0);
+            accountEntity.setCity(userInfo.getCity());
+            accountEntity.setProvince(userInfo.getProvince());
+            accountEntity.setCountry(userInfo.getCountry());
+            accountEntity.setUsername(userInfo.getNickname());
+            accountEntity.setAvatarUrl(userInfo.getHeadimgurl());
+            accountEntity.setSex(userInfo.getSex());
+            accountRepository.save(accountEntity);
+        }
+    }
+
+    private BatchUserInfoResp queryUserInfo(String wePublicAccountAppId, String openId) {
+        String accessToken = wechatAccessTokenHolder.getAccessToken(wePublicAccountAppId);
         List<BatchQueryUsrInfoReq.User> users = new ArrayList<>();
         BatchQueryUsrInfoReq.User user = BatchQueryUsrInfoReq.User.builder()
                 .lang(LANG)
@@ -111,12 +140,19 @@ public class WechatLoginProcessorImpl implements WechatLoginProcessor {
         users.add(user);
         BatchQueryUsrInfoReq batchQueryUsrInfoReq = new BatchQueryUsrInfoReq();
         batchQueryUsrInfoReq.setUser_list(users);
-        BatchUserInfoResp batchUserInfoResp = userManageService.batchQueryUserInfo(accessToken, LANG, batchQueryUsrInfoReq);
+        return userManageService.batchQueryUserInfo(accessToken, LANG, batchQueryUsrInfoReq);
+    }
+
+    private AccountEntity register(AppInfoEntity appInfoEntity, String openId, String sceneStr) {
+        // 查询用户信息
+        BatchUserInfoResp batchUserInfoResp = queryUserInfo(appInfoEntity.getWePublicAccountAppId(), openId);
+        log.info("WechatLoginProcessorImpl.register,batchUserInfoResp={}", batchUserInfoResp);
         AssertUtils.assertNotNull(batchUserInfoResp, ResultCode.BUSINESS_ERROR);
-        BatchUserInfoResp.UserInfo userInfo = batchUserInfoResp.getUser_info_list().get(0);
-        AccountEntity accountEntity = new AccountEntity();
+        AssertUtils.assertNotNull(batchUserInfoResp.getUser_info_list(), ResultCode.BUSINESS_ERROR);
 
         // 生成账户和登录方式
+        BatchUserInfoResp.UserInfo userInfo = batchUserInfoResp.getUser_info_list().get(0);
+        AccountEntity accountEntity = new AccountEntity();
         String uid = accountService.generateUid();
         String accountId = accountService.generateAccountId(appInfoEntity.getAppShortCode());
         accountEntity.setUid(uid);
