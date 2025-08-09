@@ -4,6 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
 import com.atom.authservice.service.wechat.business.WechatAccessTokenHolder;
+import com.atom.commonsdk.utils.AssertUtils;
 import com.atom.commonsdk.wechat.WeBasicService;
 import com.atom.commonsdk.wechat.bean.request.AccessTokenRequest;
 import com.atom.commonsdk.wechat.bean.response.AccessTokenResponse;
@@ -58,10 +59,7 @@ public class WechatAccessTokenHolderImpl implements WechatAccessTokenHolder {
         accessTokenRequest.setSecret(secretMap.get(appid));
         accessTokenRequest.setGrant_type(GRANT_TYPE);
         AccessTokenResponse accessTokenResponse = weBasicService.getAccessToken(accessTokenRequest);
-        if (Objects.isNull(accessTokenResponse)) {
-            log.error("WechatAccessTokenHolderImpl.getAccessToken failed");
-            return null;
-        }
+        AssertUtils.assertAllNotNull(accessTokenResponse, accessTokenResponse.getAccess_token(), accessTokenResponse.getExpires_in());
         int expireIn = accessTokenResponse.getExpires_in();
         String accessToken = accessTokenResponse.getAccess_token();
         redisTemplate.opsForValue().setIfAbsent(cacheKey, accessToken, expireIn - 30, TimeUnit.SECONDS);
