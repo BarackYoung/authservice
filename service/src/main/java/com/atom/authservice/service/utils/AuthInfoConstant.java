@@ -9,9 +9,9 @@ package com.atom.authservice.service.utils;
 public class AuthInfoConstant {
     public static final String ISSUE_AT = "issueAt";
     public static final String EXPIRE_AT = "expireAt";
-    public static final String ALGORITHM = "algorithm";
     public static final String SUBJECT = "subject";
     public static final String ISSUE_FOR = "issueFor";
     public static final String ISSUER = "issuer";
     public static final String ALLOW = "allow";
+    public static final String UID = "uid";
 }

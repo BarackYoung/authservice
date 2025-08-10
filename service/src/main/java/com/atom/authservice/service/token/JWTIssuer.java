@@ -25,7 +25,7 @@ public interface JWTIssuer {
      *
      * @return 常规token
      */
-    default String generateUsualToken(String clientId) {
+    default String generateAppToken(String clientId) {
         AuthInfo authInfo = new AuthInfo();
         authInfo.setIssuer(DEFAULT_ISSUER);
         authInfo.setIssuerFor(clientId);

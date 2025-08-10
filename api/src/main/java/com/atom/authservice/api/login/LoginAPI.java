@@ -1,7 +1,7 @@
 package com.atom.authservice.api.login;
 
-import com.atom.authservice.api.login.bean.LoginResult;
-import com.atom.authservice.api.login.bean.WechatLoginQrInfo;
+import com.atom.authservice.api.login.bean.LoginResultResp;
+import com.atom.authservice.api.login.bean.WechatLoginQrcodeResp;
 import com.atom.commonsdk.model.CommonResponse;
 import org.apache.dubbo.remoting.http12.HttpMethods;
 import org.apache.dubbo.remoting.http12.rest.Mapping;
@@ -28,10 +28,10 @@ public interface LoginAPI {
      * @return 登录信息
      */
     @Mapping(path = "/wechat/public-account/qrcode", method = HttpMethods.GET)
-    CommonResponse<WechatLoginQrInfo> getPALoginQRCode(@RequestHeader("X-Request-IP") String ip,
-                                                       @RequestHeader("X-Device-Mac") String deviceMac,
-                                                       @RequestHeader("X-Device-name") String deviceName,
-                                                       @Param(value = "appcode") String appcode);
+    CommonResponse<WechatLoginQrcodeResp> getPALoginQRCode(@RequestHeader("X-Request-IP") String ip,
+                                                           @RequestHeader("X-Device-Mac") String deviceMac,
+                                                           @RequestHeader("X-Device-name") String deviceName,
+                                                           @Param(value = "appcode") String appcode);
 
     /**
      * 检查登录结果，通过loginId检查当前用户的登录结果，轮训接口
@@ -39,6 +39,6 @@ public interface LoginAPI {
      * @param loginId 登录Id
      * @return 登录结果
      */
-    @Mapping(path = "/v1/login/result/check", method = HttpMethods.GET)
-    CommonResponse<LoginResult> checkLoginResult(@Param("loginId") String loginId);
+    @Mapping(path = "/result/check", method = HttpMethods.GET)
+    CommonResponse<LoginResultResp> checkLoginResult(@Param("loginId") String loginId);
 }

@@ -11,7 +11,7 @@ import java.io.Serializable;
  * @author: yang lianhuan
  */
 @Data
-public class WechatLoginQrInfo implements Serializable {
+public class WechatLoginQrcodeResp implements Serializable {
     private String url;
 
     private String expireTime;

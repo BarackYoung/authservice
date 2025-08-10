@@ -29,20 +29,12 @@ import java.nio.charset.StandardCharsets;
 @DubboService
 @Slf4j
 public class PublicAccountMsgImpl implements PublicAccountMsgAPI {
-    private static final String SUCCESS = "success";
-    private static final String ENCRYPT_KW = "Encrypt";
 
     @Resource
     private WechatMsgService wechatMsgService;
 
     @Value("${wechat.public.account.token}")
     private String publicAccountToken;
-
-    @Value("${wechat.public.account.encrypt}")
-    private String publicAccountEncrypt;
-
-    @Value("${wechat.public.account.appid}")
-    private String publicAccountAppid;
 
     @Override
     public String wechatMsg(String signature, String timestamp, String nonce, String echostr) {

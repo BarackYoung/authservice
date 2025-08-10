@@ -12,7 +12,7 @@ import java.util.Date;
  * @author: yang lianhuan
  */
 @Data
-public class LoginResult implements Serializable {
+public class LoginResultResp implements Serializable {
     private String token;
 
     private Date expireAt;

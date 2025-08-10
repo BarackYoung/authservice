@@ -2,8 +2,8 @@ package com.atom.authservice.impl.login;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.atom.authservice.api.login.LoginAPI;
-import com.atom.authservice.api.login.bean.LoginResult;
-import com.atom.authservice.api.login.bean.WechatLoginQrInfo;
+import com.atom.authservice.api.login.bean.LoginResultResp;
+import com.atom.authservice.api.login.bean.WechatLoginQrcodeResp;
 import com.atom.authservice.service.login.bean.GetSceneQrCodeParam;
 import com.atom.authservice.service.login.bean.SceneStrQrcodeInfo;
 import com.atom.authservice.service.login.impl.LoginServiceImpl;
@@ -12,6 +12,8 @@ import com.atom.commonsdk.model.CommonResponse;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboService;
+
+import java.util.Objects;
 
 /**
  * 登录接口的实现
@@ -27,25 +29,28 @@ public class LoginImpl implements LoginAPI {
     private LoginServiceImpl loginService;
 
     @Override
-    public CommonResponse<WechatLoginQrInfo> getPALoginQRCode(String ip, String deviceMac, String deviceName, String appcode) {
+    public CommonResponse<WechatLoginQrcodeResp> getPALoginQRCode(String ip, String deviceMac, String deviceName, String appcode) {
         GetSceneQrCodeParam param = new GetSceneQrCodeParam();
         param.setAppCode(appcode);
         param.setDeviceMac(deviceMac);
         param.setDeviceName(deviceName);
         param.setIp(ip);
         SceneStrQrcodeInfo sceneStrQrcodeInfo = loginService.getSceneStrQrcode(param);
-        WechatLoginQrInfo loginQrInfo = new WechatLoginQrInfo();
+        WechatLoginQrcodeResp loginQrInfo = new WechatLoginQrcodeResp();
         BeanUtil.copyProperties(sceneStrQrcodeInfo, loginQrInfo);
         return CommonResponse.ofSuccess(loginQrInfo);
     }
 
     @Override
-    public CommonResponse<LoginResult> checkLoginResult(String loginId) {
+    public CommonResponse<LoginResultResp> checkLoginResult(String loginId) {
         TokenInfo tokenInfo = loginService.checkLoginResult(loginId);
-        LoginResult loginResult = new LoginResult();
-        loginResult.setLoginId(loginId);
-        loginResult.setToken(tokenInfo.getToken());
-        loginResult.setExpireAt(tokenInfo.getExpiresAt());
-        return CommonResponse.ofSuccess(loginResult);
+        if (Objects.isNull(tokenInfo)) {
+            return CommonResponse.ofSuccess();
+        }
+        LoginResultResp loginResultResp = new LoginResultResp();
+        loginResultResp.setLoginId(loginId);
+        loginResultResp.setToken(tokenInfo.getToken());
+        loginResultResp.setExpireAt(tokenInfo.getExpiresAt());
+        return CommonResponse.ofSuccess(loginResultResp);
     }
 }

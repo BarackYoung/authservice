@@ -19,9 +19,11 @@ public class AccountEntity extends BasicEntity {
 
     private String accountId;
 
-    private String platform;
+    private String appCode;
 
     private String uid;
+
+    private String weUnionid;
 
     private String username;
 

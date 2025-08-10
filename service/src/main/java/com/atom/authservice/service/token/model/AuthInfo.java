@@ -32,6 +32,11 @@ public class AuthInfo {
     private String issuerFor;
 
     /**
+     * uid
+     */
+    private String uid;
+
+    /**
      * 允许的操作，用户ID:资源ID/all:all/read/write
      */
     private List<String> allow;
@@ -69,6 +74,7 @@ public class AuthInfo {
         claims.put(AuthInfoConstant.ISSUE_FOR,this.issuerFor);
         claims.put(AuthInfoConstant.ISSUER, this.issuer);
         claims.put(AuthInfoConstant.ALLOW, allow);
+        claims.put(AuthInfoConstant.UID, this.uid);
         return claims;
     }
 }

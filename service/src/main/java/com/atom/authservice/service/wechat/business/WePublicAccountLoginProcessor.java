@@ -8,7 +8,7 @@ import com.atom.commonsdk.wechat.message.EventMessage;
  * @data: 2025/8/4
  * @author: yang lianhuan
  */
-public interface WechatLoginProcessor {
+public interface WePublicAccountLoginProcessor {
 
     /**
      * 处理登录行为

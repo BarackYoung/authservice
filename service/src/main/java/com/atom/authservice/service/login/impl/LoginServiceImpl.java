@@ -110,34 +110,6 @@ public class LoginServiceImpl implements LoginService {
                 .build();
     }
 
-    private LoginRecordEntity buildLoginRecordEntity(GetSceneQrCodeParam request, String sceneStr) {
-        LoginRecordEntity loginRecordEntity = new LoginRecordEntity();
-        loginRecordEntity.setAuthType(AuthTypeEnum.WECHAT_PUBLIC_ACCOUNT.name());
-        loginRecordEntity.setIp(request.getIp());
-        loginRecordEntity.setDeviceMac(request.getDeviceMac());
-        loginRecordEntity.setDeviceName(request.getDeviceName());
-        loginRecordEntity.setIp(request.getIp());
-        String location = IpLocationUtils.getLocation(loginRecordEntity.getIp());
-        loginRecordEntity.setLocation(location);
-        loginRecordEntity.setLoginId(sceneStr);
-        loginRecordEntity.setStatus(LoginStatusEnum.INIT.getStatus());
-        return loginRecordEntity;
-    }
-
-    private CreateQrCodeRequest buildCreateQrCodeRequest(String sceneStr) {
-        CreateQrCodeRequest.Scene scene = CreateQrCodeRequest.Scene.builder()
-                .scene_str(sceneStr)
-                .build();
-        CreateQrCodeRequest.ActionInfo actionInfo = CreateQrCodeRequest.ActionInfo.builder()
-                .scene(scene)
-                .build();
-        return CreateQrCodeRequest.builder()
-                .expire_seconds(180)
-                .action_name(ACTION_NAME)
-                .action_info(actionInfo)
-                .build();
-    }
-
     @Override
     public TokenInfo checkLoginResult(String sceneStr) {
         String loginCacheKey = LOGIN_CACHE_PREFIX + sceneStr;
@@ -146,6 +118,8 @@ public class LoginServiceImpl implements LoginService {
 
     @Override
     public void setLoginResult(String appCode, String accountId, String sceneStr, TokenInfo tokenInfo) {
+        log.info("LoginServiceImpl.setLoginResult,appCode:{},accountId:{},sceneStr:{},tokenInfo:{}", appCode,
+                accountId, sceneStr, tokenInfo);
         // 设置缓存
         String loginCacheKey = LOGIN_CACHE_PREFIX + sceneStr;
         try {
@@ -161,8 +135,8 @@ public class LoginServiceImpl implements LoginService {
     public AccountEntity registerAccount(AccountEntity accountEntity, AuthPatternEntity authPatternEntity) {
         log.info("LoginServiceImpl.registerAccount,accountEntity:{}，authPatternEntity:{}", accountEntity, authPatternEntity);
         AssertUtils.assertAllNotNull(accountEntity, authPatternEntity);
-        AssertUtils.assertTrue(accountEntity.getId() == 0, ResultCode.BUSINESS_ERROR);
-        AssertUtils.assertTrue(authPatternEntity.getId() == 0, ResultCode.BUSINESS_ERROR);
+        AssertUtils.assertNull(accountEntity.getId(), ResultCode.BUSINESS_ERROR);
+        AssertUtils.assertNull(authPatternEntity.getId(), ResultCode.BUSINESS_ERROR);
         AccountEntity savedAccountEntity = accountRepository.save(accountEntity);
         AuthPatternEntity savedAuthPatternEntity = authPatternRepository.save(authPatternEntity);
         AssertUtils.assertNotNull(savedAccountEntity, ResultCode.BUSINESS_ERROR);
@@ -196,6 +170,34 @@ public class LoginServiceImpl implements LoginService {
             return jwtissuer.generateToken(authInfo);
         }
         return null;
+    }
+
+    private LoginRecordEntity buildLoginRecordEntity(GetSceneQrCodeParam request, String sceneStr) {
+        LoginRecordEntity loginRecordEntity = new LoginRecordEntity();
+        loginRecordEntity.setAuthType(AuthTypeEnum.WECHAT_PUBLIC_ACCOUNT.name());
+        loginRecordEntity.setIp(request.getIp());
+        loginRecordEntity.setDeviceMac(request.getDeviceMac());
+        loginRecordEntity.setDeviceName(request.getDeviceName());
+        loginRecordEntity.setIp(request.getIp());
+        String location = IpLocationUtils.getLocation(loginRecordEntity.getIp());
+        loginRecordEntity.setLocation(location);
+        loginRecordEntity.setLoginId(sceneStr);
+        loginRecordEntity.setStatus(LoginStatusEnum.INIT.getStatus());
+        return loginRecordEntity;
+    }
+
+    private CreateQrCodeRequest buildCreateQrCodeRequest(String sceneStr) {
+        CreateQrCodeRequest.Scene scene = CreateQrCodeRequest.Scene.builder()
+                .scene_str(sceneStr)
+                .build();
+        CreateQrCodeRequest.ActionInfo actionInfo = CreateQrCodeRequest.ActionInfo.builder()
+                .scene(scene)
+                .build();
+        return CreateQrCodeRequest.builder()
+                .expire_seconds(180)
+                .action_name(ACTION_NAME)
+                .action_info(actionInfo)
+                .build();
     }
 
     private void recordLogin(LoginRecordEntity loginRecordEntity) {
