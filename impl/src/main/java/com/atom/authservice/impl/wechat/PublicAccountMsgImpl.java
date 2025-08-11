@@ -76,7 +76,16 @@ public class PublicAccountMsgImpl implements PublicAccountMsgAPI {
             wechatMsg.setSignature(signature);
             wechatMsg.setCryptType(CryptType.ENCODED);
             wechatMsg.setXmlMsgContent(postData);
-            return wechatMsgService.process(wechatMsg);
+            HttpResponse response = RpcContext.getServiceContext().getResponse(HttpResponse.class);
+            String result = wechatMsgService.process(wechatMsg);
+            try (OutputStream outputStream = response.outputStream()) {
+                outputStream.write(result.getBytes(StandardCharsets.UTF_8));
+                response.commit();
+            } catch (Exception e) {
+                log.error("PublicAccountMsgImpl.wechatMsg.write.error", e);
+                throw new BusinessException(ResultCode.SYSTEM_ERROR);
+            }
+            return result;
         } catch (Exception e) {
             log.info("PublicAccountMsgImpl.wechatMsg.process.error", e);
             throw new BusinessException(ResultCode.SYSTEM_ERROR);

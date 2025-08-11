@@ -1,5 +1,6 @@
 package com.atom.authservice.service.wechat.msg;
 
+import cn.hutool.core.util.StrUtil;
 import com.alibaba.fastjson2.JSON;
 import com.atom.authservice.service.wechat.business.WePublicAccountLoginProcessor;
 import com.atom.commonsdk.wechat.anotation.WechatMsgProcessor;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 public class EventMsgProcessorImpl implements EventMsgProcessor {
+    private static final String LOGIN_PREFIX = "LOGIN_";
 
     @Resource
     private WePublicAccountLoginProcessor wePublicAccountLoginProcessor;
@@ -26,9 +28,12 @@ public class EventMsgProcessorImpl implements EventMsgProcessor {
     @Override
     public String process(EventMessage eventMessage) {
         log.info("EventMsgProcessorImpl.process, eventMessage:{}", JSON.toJSONString(eventMessage));
+        String eventKey = eventMessage.getEventKey();
 
         // 处理登录事件消息
-        wePublicAccountLoginProcessor.processLogin(eventMessage);
+        if (StrUtil.startWith(eventKey, LOGIN_PREFIX)) {
+            return wePublicAccountLoginProcessor.processLogin(eventMessage);
+        }
         return "success";
     }
 }

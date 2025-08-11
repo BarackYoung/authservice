@@ -15,5 +15,5 @@ public interface WePublicAccountLoginProcessor {
      *
      * @param eventMessage 事件消息
      */
-    void processLogin(EventMessage eventMessage);
+    String processLogin(EventMessage eventMessage);
 }

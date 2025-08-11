@@ -19,6 +19,8 @@ import com.atom.commonsdk.wechat.WeUserManageService;
 import com.atom.commonsdk.wechat.bean.request.BatchQueryUsrInfoReq;
 import com.atom.commonsdk.wechat.bean.response.BatchUserInfoResp;
 import com.atom.commonsdk.wechat.message.EventMessage;
+import com.atom.commonsdk.wechat.message.TextMessage;
+import com.atom.commonsdk.wechat.utils.XmlMessageUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -37,6 +39,9 @@ public class WePublicAccountLoginProcessorImpl implements WePublicAccountLoginPr
     private static final String LOGIN_PREFIX = "LOGIN_";
     private static final String LANG = "zh_CN";
     private static final String DEFAULT_USERNAME_PREFIX = "海豚";
+    private static final String DEFAULT_REPLAY = "success";
+    private static final String LOGIN_FAIL_MSG = "登录失败";
+    private static final String LOGIN_SUCCESS_MSG = "登录成功";
 
     @Resource
     private AccountService accountService;
@@ -60,11 +65,11 @@ public class WePublicAccountLoginProcessorImpl implements WePublicAccountLoginPr
     private AccountRepository accountRepository;
 
     @Override
-    public void processLogin(EventMessage eventMessage) {
+    public String processLogin(EventMessage eventMessage) {
         log.info("WechatLoginProcessorImpl.processLogin,eventMessage={}", eventMessage);
         String sceneStr = eventMessage.getEventKey();
         if (!StrUtil.startWith(sceneStr, LOGIN_PREFIX)) {
-            return;
+            return XmlMessageUtil.parse2TextXmlMsg(eventMessage.getToUserName(), eventMessage.getFromUserName(), LOGIN_FAIL_MSG);
         }
 
         // 查询app实例配置
@@ -89,7 +94,7 @@ public class WePublicAccountLoginProcessorImpl implements WePublicAccountLoginPr
                 AssertUtils.assertNotNull(accountEntity, ResultCode.BUSINESS_ERROR);
             } catch (Exception e) {
                 log.error("LoginProcessorImpl.register failed", e);
-                return;
+                return XmlMessageUtil.parse2TextXmlMsg(eventMessage.getToUserName(), eventMessage.getFromUserName(), LOGIN_FAIL_MSG);
             }
         } else {
             // 老用户扫码，更新信息
@@ -103,6 +108,7 @@ public class WePublicAccountLoginProcessorImpl implements WePublicAccountLoginPr
         TokenInfo tokenInfo = loginService.verifyAndSignToken(appInfoEntity.getAppCode(),
                 AuthTypeEnum.WECHAT_PUBLIC_ACCOUNT, openId, sceneStr);
         loginService.setLoginResult(appInfoEntity.getAppCode(), authPatternEntity.getAccountId(), sceneStr, tokenInfo);
+        return XmlMessageUtil.parse2TextXmlMsg(eventMessage.getToUserName(), eventMessage.getFromUserName(), LOGIN_SUCCESS_MSG);
     }
 
     private void updateUserAuthInfo(AuthPatternEntity authPatternEntity, String sceneStr) {
