@@ -12,4 +12,11 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public interface LoginRecordRepository extends JpaRepository<LoginRecordEntity, Long> {
+    /**
+     * 通过登录ID查找
+     *
+     * @param loginId 登录ID
+     * @return 登录记录
+     */
+    LoginRecordEntity findByLoginId(String loginId);
 }

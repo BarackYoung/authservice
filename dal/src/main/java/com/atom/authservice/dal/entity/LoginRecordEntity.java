@@ -32,6 +32,8 @@ public class LoginRecordEntity extends BasicEntity {
 
     private String deviceName;
 
+    private String requestId;
+
     /**
      * @see com.atom.authservice.service.login.enums.LoginStatusEnum
      */

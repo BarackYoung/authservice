@@ -10,6 +10,7 @@ import com.atom.authservice.dal.repository.AuthPatternRepository;
 import com.atom.authservice.service.account.AccountService;
 import com.atom.authservice.service.login.LoginService;
 import com.atom.authservice.service.login.enums.AuthTypeEnum;
+import com.atom.authservice.service.login.enums.LoginStatusEnum;
 import com.atom.authservice.service.token.model.TokenInfo;
 import com.atom.authservice.service.wechat.business.WePublicAccountLoginProcessor;
 import com.atom.authservice.service.wechat.business.WechatAccessTokenHolder;
@@ -19,7 +20,6 @@ import com.atom.commonsdk.wechat.WeUserManageService;
 import com.atom.commonsdk.wechat.bean.request.BatchQueryUsrInfoReq;
 import com.atom.commonsdk.wechat.bean.response.BatchUserInfoResp;
 import com.atom.commonsdk.wechat.message.EventMessage;
-import com.atom.commonsdk.wechat.message.TextMessage;
 import com.atom.commonsdk.wechat.utils.XmlMessageUtil;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -36,10 +36,8 @@ import java.util.*;
 @Component
 @Slf4j
 public class WePublicAccountLoginProcessorImpl implements WePublicAccountLoginProcessor {
-    private static final String LOGIN_PREFIX = "LOGIN_";
     private static final String LANG = "zh_CN";
     private static final String DEFAULT_USERNAME_PREFIX = "海豚";
-    private static final String DEFAULT_REPLAY = "success";
     private static final String LOGIN_FAIL_MSG = "登录失败";
     private static final String LOGIN_SUCCESS_MSG = "登录成功";
 
@@ -53,24 +51,15 @@ public class WePublicAccountLoginProcessorImpl implements WePublicAccountLoginPr
     private AppInfoRepository appInfoRepository;
 
     @Resource
-    private AuthPatternRepository authPatternRepository;
-
-    @Resource
     private WeUserManageService userManageService;
 
     @Resource
     private WechatAccessTokenHolder wechatAccessTokenHolder;
 
-    @Resource
-    private AccountRepository accountRepository;
-
     @Override
     public String processLogin(EventMessage eventMessage) {
         log.info("WechatLoginProcessorImpl.processLogin,eventMessage={}", eventMessage);
         String sceneStr = eventMessage.getEventKey();
-        if (!StrUtil.startWith(sceneStr, LOGIN_PREFIX)) {
-            return XmlMessageUtil.parse2TextXmlMsg(eventMessage.getToUserName(), eventMessage.getFromUserName(), LOGIN_FAIL_MSG);
-        }
 
         // 查询app实例配置
         String[] sceneArr = sceneStr.split(StrUtil.UNDERLINE);
@@ -83,8 +72,8 @@ public class WePublicAccountLoginProcessorImpl implements WePublicAccountLoginPr
 
         // 查询鉴权信息
         String openId = eventMessage.getFromUserName();
-        AuthPatternEntity authPatternEntity = authPatternRepository.findByAppCodeAndIdentifierAndAuthType(
-                appInfoEntity.getAppCode(), openId, AuthTypeEnum.WECHAT_PUBLIC_ACCOUNT.name());
+        AuthPatternEntity authPatternEntity = loginService.queryAuthPattern(appInfoEntity.getAppCode(), openId,
+                AuthTypeEnum.WECHAT_PUBLIC_ACCOUNT);
         log.info("WechatLoginProcessorImpl.processLogin,authPatternEntity={}", authPatternEntity);
 
         // 新用户第一次扫码，注册
@@ -94,6 +83,7 @@ public class WePublicAccountLoginProcessorImpl implements WePublicAccountLoginPr
                 AssertUtils.assertNotNull(accountEntity, ResultCode.BUSINESS_ERROR);
             } catch (Exception e) {
                 log.error("LoginProcessorImpl.register failed", e);
+                loginService.updateLoginRecord(sceneStr, null, null, LoginStatusEnum.FAIL);
                 return XmlMessageUtil.parse2TextXmlMsg(eventMessage.getToUserName(), eventMessage.getFromUserName(), LOGIN_FAIL_MSG);
             }
         } else {
@@ -102,12 +92,12 @@ public class WePublicAccountLoginProcessorImpl implements WePublicAccountLoginPr
         }
 
         // 签发token，并设置登录结果
-        authPatternEntity = authPatternRepository.findByAppCodeAndIdentifierAndAuthType(
-                appInfoEntity.getAppCode(), openId, AuthTypeEnum.WECHAT_PUBLIC_ACCOUNT.name());
+        authPatternEntity = loginService.queryAuthPattern(appInfoEntity.getAppCode(), openId, AuthTypeEnum.WECHAT_PUBLIC_ACCOUNT);
         AssertUtils.assertNotNull(authPatternEntity, ResultCode.BUSINESS_ERROR);
         TokenInfo tokenInfo = loginService.verifyAndSignToken(appInfoEntity.getAppCode(),
                 AuthTypeEnum.WECHAT_PUBLIC_ACCOUNT, openId, sceneStr);
         loginService.setLoginResult(appInfoEntity.getAppCode(), authPatternEntity.getAccountId(), sceneStr, tokenInfo);
+        loginService.updateLoginRecord(sceneStr, authPatternEntity.getAccountId(), authPatternEntity.getIdentifier(), LoginStatusEnum.ISSUED);
         return XmlMessageUtil.parse2TextXmlMsg(eventMessage.getToUserName(), eventMessage.getFromUserName(), LOGIN_SUCCESS_MSG);
     }
 
@@ -117,7 +107,7 @@ public class WePublicAccountLoginProcessorImpl implements WePublicAccountLoginPr
         long currentTime = System.currentTimeMillis();
         long expireTime = currentTime + 360000;
         authPatternEntity.setExpireTime(new Date(expireTime));
-        authPatternRepository.save(authPatternEntity);
+        loginService.updateAuthPattern(authPatternEntity);
     }
 
     private BatchUserInfoResp queryUserInfo(String wePublicAccountAppId, String openId) {

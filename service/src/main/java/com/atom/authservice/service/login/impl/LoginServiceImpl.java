@@ -150,6 +150,17 @@ public class LoginServiceImpl implements LoginService {
     }
 
     @Override
+    public AuthPatternEntity queryAuthPattern(String appCode, String identifier, AuthTypeEnum authTypeEnum) {
+        return authPatternRepository.findByAppCodeAndIdentifierAndAuthType(appCode, identifier, authTypeEnum.name());
+    }
+
+    @Override
+    public AuthPatternEntity updateAuthPattern(AuthPatternEntity authPatternEntity) {
+        AssertUtils.assertNull(authPatternEntity.getId(), ResultCode.BUSINESS_ERROR);
+        return authPatternRepository.save(authPatternEntity);
+    }
+
+    @Override
     public TokenInfo verifyAndSignToken(String appCode, AuthTypeEnum authType, String identifier, String credential) {
         AuthPatternEntity authPattern = authPatternRepository.findByAppCodeAndIdentifierAndAuthType(appCode, identifier, authType.name());
         log.info("LoginServiceImpl.verifyAndSignToken,authPattern:{}", authPattern);
@@ -170,6 +181,25 @@ public class LoginServiceImpl implements LoginService {
             return jwtissuer.generateToken(authInfo);
         }
         return null;
+    }
+
+    @Override
+    public void updateLoginRecord(String loginId, String accountId, String identifier, LoginStatusEnum loginStatus) {
+        LoginRecordEntity loginRecordEntity = loginRecordRepository.findByLoginId(loginId);
+        if (Objects.isNull(loginRecordEntity)) {
+            return;
+        }
+        if (StrUtil.isNotBlank(accountId)) {
+            loginRecordEntity.setAccount_id(accountId);
+        }
+        if (StrUtil.isNotBlank(identifier)) {
+            loginRecordEntity.setIdentifier(identifier);
+        }
+        if (loginStatus != null) {
+            loginRecordEntity.setStatus(loginStatus.getStatus());
+
+        }
+        loginRecordRepository.save(loginRecordEntity);
     }
 
     private LoginRecordEntity buildLoginRecordEntity(GetSceneQrCodeParam request, String sceneStr) {

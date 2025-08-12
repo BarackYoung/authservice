@@ -38,6 +38,7 @@ public class JWTIssuerImpl implements JWTIssuer {
         tokenInfo.setExpiresAt(authInfo.getExpireAt());
         tokenInfo.setIssueFor(authInfo.getIssuerFor());
         tokenInfo.setIssuedAt(authInfo.getIssueAt());
+        tokenInfo.setAuthInfo(authInfo);
         return tokenInfo;
     }
 }

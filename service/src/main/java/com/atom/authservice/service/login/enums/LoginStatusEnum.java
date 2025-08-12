@@ -12,9 +12,11 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum LoginStatusEnum {
-    INIT(0),
-    SUCCESS(1),
-    FAIL(2);
+    INIT(0, "初始化"),
+    ISSUED(1, "已签发TOKEN"),
+    SUCCESS(2, "登录成功"),
+    FAIL(3, "登录失败");
 
     private final int status;
+    private final String msg;
 }
