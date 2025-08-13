@@ -156,7 +156,7 @@ public class LoginServiceImpl implements LoginService {
 
     @Override
     public AuthPatternEntity updateAuthPattern(AuthPatternEntity authPatternEntity) {
-        AssertUtils.assertNull(authPatternEntity.getId(), ResultCode.BUSINESS_ERROR);
+        AssertUtils.assertNotNull(authPatternEntity.getId(), ResultCode.BUSINESS_ERROR);
         return authPatternRepository.save(authPatternEntity);
     }
 
