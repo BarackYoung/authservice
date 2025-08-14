@@ -3,6 +3,8 @@ package com.atom.authservice.service.token.model;
 import com.atom.authservice.service.utils.AuthInfoConstant;
 import lombok.Data;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -15,7 +17,10 @@ import java.util.Map;
  * @author: yang lianhuan
  */
 @Data
-public class AuthInfo {
+public class AuthInfo implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
+
     /**
      * 主体appCode
      */

@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
  * @data: 2025/7/31
  * @author: yang lianhuan
  */
-@Mapping(path = "v1/login")
+@Mapping(path = "/public/v1/login")
 public interface LoginAPI {
 
 
@@ -29,8 +29,8 @@ public interface LoginAPI {
      */
     @Mapping(path = "/wechat/public-account/qrcode", method = HttpMethods.GET)
     CommonResponse<WechatLoginQrcodeResp> getPALoginQRCode(@RequestHeader("X-Request-IP") String ip,
-                                                           @RequestHeader("X-Device-Mac") String deviceMac,
-                                                           @RequestHeader("X-Device-name") String deviceName,
+                                                           @RequestHeader(value = "X-Device-Mac", required = false) String deviceMac,
+                                                           @RequestHeader(value = "X-Device-name", required = false) String deviceName,
                                                            @Param(value = "appcode") String appcode);
 
     /**
