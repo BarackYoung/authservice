@@ -61,7 +61,7 @@ public class AuthInfo implements Serializable {
      *
      * @return 头部
      */
-    public Map<String, Object> getHeader() {
+    public Map<String, Object> generateHeader() {
         Map<String,Object> header = new HashMap<>();
         header.put(AuthInfoConstant.ISSUE_AT, this.issueAt);
         header.put(AuthInfoConstant.EXPIRE_AT, this.expireAt);
@@ -73,7 +73,7 @@ public class AuthInfo implements Serializable {
      *
      * @return body
      */
-    public Map<String, Object> getClaims() {
+    public Map<String, Object> generateClaims() {
         Map<String,Object> claims = new HashMap<>();
         claims.put(AuthInfoConstant.SUBJECT, this.subject);
         claims.put(AuthInfoConstant.ISSUE_FOR,this.issuerFor);

@@ -27,8 +27,8 @@ public class JWTIssuerImpl implements JWTIssuer {
         JWT jwt = JWT.create()
                 .setSubject(authInfo.getSubject())
                 .setIssuedAt(authInfo.getIssueAt())
-                .addPayloads(authInfo.getClaims())
-                .addHeaders(authInfo.getHeader())
+                .addPayloads(authInfo.generateClaims())
+                .addHeaders(authInfo.generateHeader())
                 .setExpiresAt(authInfo.getExpireAt());
         JWTSigner signer = JWTSignerUtil.rs512(keyHolder.getCurrentKeyPair().getPrivateKey());
         String token = jwt.sign(signer);
