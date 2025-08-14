@@ -11,8 +11,9 @@ import org.apache.dubbo.config.annotation.DubboService;
  */
 @DubboService
 public class AuthDemoImpl implements AuthDemoAPI {
+
     @Override
-    public String demo(String param) {
-        return "hello " + param;
+    public String demo(String param, String ip, String uid, String accountId, String requestId) {
+        return "hello " + param + " ip:" + ip + " uid:" + uid + " accountId:" + accountId + " requestId:" + requestId;
     }
 }

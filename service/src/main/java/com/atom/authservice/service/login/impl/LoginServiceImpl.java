@@ -168,10 +168,14 @@ public class LoginServiceImpl implements LoginService {
             return null;
         }
 
+        AccountEntity accountEntity = accountRepository.findByAccountId(authPattern.getAccountId());
+        AssertUtils.assertNotNull(accountEntity, ResultCode.BUSINESS_ERROR);
+
         // 校验通过，签发token
         if (verifyAuthPattern(authPattern, credential)) {
             AuthInfo authInfo = new AuthInfo();
             authInfo.setIssuerFor(authPattern.getAccountId());
+            authInfo.setUid(accountEntity.getUid());
             long currentTime = System.currentTimeMillis();
             long expireTime = currentTime + 3600000;
             authInfo.setIssueAt(new Date(currentTime));
