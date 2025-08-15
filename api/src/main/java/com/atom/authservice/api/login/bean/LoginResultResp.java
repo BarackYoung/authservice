@@ -3,7 +3,6 @@ package com.atom.authservice.api.login.bean;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.util.Date;
 
 /**
  * 登录结果
@@ -13,9 +12,7 @@ import java.util.Date;
  */
 @Data
 public class LoginResultResp implements Serializable {
-    private String token;
+    private Object authToken;
 
-    private Date expireAt;
-
-    private String loginId;
+    private Object refreshToken;
 }

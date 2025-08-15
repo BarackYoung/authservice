@@ -9,6 +9,7 @@ import com.atom.authservice.dal.repository.AppInfoRepository;
 import com.atom.authservice.dal.repository.AuthPatternRepository;
 import com.atom.authservice.service.account.AccountService;
 import com.atom.authservice.service.login.LoginService;
+import com.atom.authservice.service.login.bean.AuthResult;
 import com.atom.authservice.service.login.enums.AuthTypeEnum;
 import com.atom.authservice.service.login.enums.LoginStatusEnum;
 import com.atom.authservice.service.token.model.TokenInfo;
@@ -94,9 +95,9 @@ public class WePublicAccountLoginProcessorImpl implements WePublicAccountLoginPr
         // 签发token，并设置登录结果
         authPatternEntity = loginService.queryAuthPattern(appInfoEntity.getAppCode(), openId, AuthTypeEnum.WECHAT_PUBLIC_ACCOUNT);
         AssertUtils.assertNotNull(authPatternEntity, ResultCode.BUSINESS_ERROR);
-        TokenInfo tokenInfo = loginService.verifyAndSignToken(appInfoEntity.getAppCode(),
+        AuthResult authResult = loginService.verifyAndSignToken(appInfoEntity.getAppCode(),
                 AuthTypeEnum.WECHAT_PUBLIC_ACCOUNT, openId, sceneStr);
-        loginService.setLoginResult(appInfoEntity.getAppCode(), authPatternEntity.getAccountId(), sceneStr, tokenInfo);
+        loginService.setLoginResult(appInfoEntity.getAppCode(), authPatternEntity.getAccountId(), sceneStr, authResult);
         loginService.updateLoginRecord(sceneStr, authPatternEntity.getAccountId(), authPatternEntity.getIdentifier(), LoginStatusEnum.ISSUED);
         return XmlMessageUtil.parse2TextXmlMsg(eventMessage.getToUserName(), eventMessage.getFromUserName(), LOGIN_SUCCESS_MSG);
     }

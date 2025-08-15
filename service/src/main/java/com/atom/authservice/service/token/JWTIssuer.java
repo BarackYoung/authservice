@@ -3,6 +3,8 @@ package com.atom.authservice.service.token;
 import com.atom.authservice.service.token.model.TokenInfo;
 import com.atom.authservice.service.token.model.AuthInfo;
 
+import java.security.Key;
+
 /**
  * JWT 签发器
  *
@@ -16,19 +18,8 @@ public interface JWTIssuer {
      * 签发一个token
      *
      * @param authInfo 鉴权信息
+     * @param key 私钥
      * @return token
      */
-    TokenInfo generateToken(AuthInfo authInfo);
-
-    /**
-     * 未登录状态下，生成常规接口调用token，非用户专用token，用于保护非登录状态下接口调用
-     *
-     * @return 常规token
-     */
-    default String generateAppToken(String clientId) {
-        AuthInfo authInfo = new AuthInfo();
-        authInfo.setIssuer(DEFAULT_ISSUER);
-        authInfo.setIssuerFor(clientId);
-        return generateToken(authInfo).getToken();
-    }
+    TokenInfo generateToken(AuthInfo authInfo, Key key);
 }

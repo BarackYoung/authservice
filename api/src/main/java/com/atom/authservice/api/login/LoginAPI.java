@@ -41,4 +41,13 @@ public interface LoginAPI {
      */
     @Mapping(path = "/result/check", method = HttpMethods.GET)
     CommonResponse<LoginResultResp> checkLoginResult(@Param("loginId") String loginId);
+
+    /**
+     * 刷新token
+     *
+     * @param refreshToken refreshToken
+     * @return 刷新结果
+     */
+    @Mapping(path = "/auth/refresh", method = HttpMethods.GET)
+    CommonResponse<LoginResultResp> refreshLoginResult(@Param("refreshToken") String refreshToken);
 }

@@ -12,6 +12,8 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.security.Key;
+
 /**
  * JWTIssuerImpl
  *
@@ -26,7 +28,7 @@ public class JWTIssuerImpl implements JWTIssuer {
     private KeyHolder keyHolder;
 
     @Override
-    public TokenInfo generateToken(AuthInfo authInfo) {
+    public TokenInfo generateToken(AuthInfo authInfo, Key key) {
         log.info("JWTIssuerImpl.authInfo: {}", JSON.toJSONString(authInfo));
         JWT jwt = JWT.create()
                 .setSubject(authInfo.getSubject())

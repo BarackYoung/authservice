@@ -4,11 +4,11 @@ import cn.hutool.core.bean.BeanUtil;
 import com.atom.authservice.api.login.LoginAPI;
 import com.atom.authservice.api.login.bean.LoginResultResp;
 import com.atom.authservice.api.login.bean.WechatLoginQrcodeResp;
+import com.atom.authservice.service.login.bean.AuthResult;
 import com.atom.authservice.service.login.bean.GetSceneQrCodeParam;
 import com.atom.authservice.service.login.bean.SceneStrQrcodeInfo;
 import com.atom.authservice.service.login.enums.LoginStatusEnum;
 import com.atom.authservice.service.login.impl.LoginServiceImpl;
-import com.atom.authservice.service.token.model.TokenInfo;
 import com.atom.commonsdk.model.CommonResponse;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -44,17 +44,21 @@ public class LoginImpl implements LoginAPI {
 
     @Override
     public CommonResponse<LoginResultResp> checkLoginResult(String loginId) {
-        TokenInfo tokenInfo = loginService.checkLoginResult(loginId);
-        if (Objects.isNull(tokenInfo) || Objects.isNull(tokenInfo.getToken()) || Objects.isNull(tokenInfo.getAuthInfo())) {
+        AuthResult authResult = loginService.checkLoginResult(loginId);
+        if (Objects.isNull(authResult) || Objects.isNull(authResult.getAuthToken()) || Objects.isNull(authResult.getRefreshToken())) {
             return CommonResponse.ofSuccess();
         }
         LoginResultResp loginResultResp = new LoginResultResp();
-        loginResultResp.setLoginId(loginId);
-        loginResultResp.setToken(tokenInfo.getToken());
-        loginResultResp.setExpireAt(tokenInfo.getExpiresAt());
+        loginResultResp.setAuthToken(authResult.getAuthToken());
+        loginResultResp.setRefreshToken(authResult.getRefreshToken());
 
         // 设置登录成功记录
         loginService.updateLoginRecord(loginId, null, null, LoginStatusEnum.ISSUED);
         return CommonResponse.ofSuccess(loginResultResp);
+    }
+
+    @Override
+    public CommonResponse<LoginResultResp> refreshLoginResult(String refreshToken) {
+        return null;
     }
 }

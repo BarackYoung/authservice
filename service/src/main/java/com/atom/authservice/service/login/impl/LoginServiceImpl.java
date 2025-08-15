@@ -3,6 +3,11 @@ package com.atom.authservice.service.login.impl;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.BCrypt;
+import cn.hutool.jwt.JWT;
+import cn.hutool.jwt.JWTUtil;
+import cn.hutool.jwt.signers.JWTSigner;
+import cn.hutool.jwt.signers.JWTSignerUtil;
+import com.alibaba.fastjson2.JSON;
 import com.atom.authservice.dal.entity.AccountEntity;
 import com.atom.authservice.dal.entity.AppInfoEntity;
 import com.atom.authservice.dal.entity.AuthPatternEntity;
@@ -11,9 +16,11 @@ import com.atom.authservice.dal.repository.AccountRepository;
 import com.atom.authservice.dal.repository.AppInfoRepository;
 import com.atom.authservice.dal.repository.AuthPatternRepository;
 import com.atom.authservice.dal.repository.LoginRecordRepository;
+import com.atom.authservice.service.login.bean.AuthResult;
 import com.atom.authservice.service.login.bean.GetSceneQrCodeParam;
 import com.atom.authservice.service.login.bean.SceneStrQrcodeInfo;
 import com.atom.authservice.service.login.enums.LoginStatusEnum;
+import com.atom.authservice.service.token.KeyHolder;
 import com.atom.authservice.service.token.model.TokenInfo;
 import com.atom.authservice.service.login.LoginService;
 import com.atom.authservice.service.login.enums.AuthTypeEnum;
@@ -53,6 +60,8 @@ public class LoginServiceImpl implements LoginService {
     private static final String TIME_PATTERN = "yyyyMMddHHmmss";
     private static final int SCENE_STR_RANDOM_LEN = 10;
     private static final String ISSUER = "authService";
+    private static final String EXP = "exp";
+    private static final String NBF = "nbf";
     private static final String LOGIN_CACHE_PREFIX = "authsService:LoginServiceImpl:";
 
     @Resource
@@ -72,6 +81,9 @@ public class LoginServiceImpl implements LoginService {
 
     @Resource
     private JWTIssuer jwtissuer;
+
+    @Resource
+    private KeyHolder keyHolder;
 
     @Resource
     private LoginRecordRepository loginRecordRepository;
@@ -111,22 +123,22 @@ public class LoginServiceImpl implements LoginService {
     }
 
     @Override
-    public TokenInfo checkLoginResult(String sceneStr) {
+    public AuthResult checkLoginResult(String sceneStr) {
         String loginCacheKey = LOGIN_CACHE_PREFIX + sceneStr;
-        return (TokenInfo) redisTemplate.opsForValue().get(loginCacheKey);
+        return (AuthResult) redisTemplate.opsForValue().get(loginCacheKey);
     }
 
     @Override
-    public void setLoginResult(String appCode, String accountId, String sceneStr, TokenInfo tokenInfo) {
-        log.info("LoginServiceImpl.setLoginResult,appCode:{},accountId:{},sceneStr:{},tokenInfo:{}", appCode,
-                accountId, sceneStr, tokenInfo);
+    public void setLoginResult(String appCode, String accountId, String sceneStr, AuthResult authResult) {
+        log.info("LoginServiceImpl.setLoginResult,appCode:{},accountId:{},sceneStr:{},authResult:{}", appCode,
+                accountId, sceneStr, authResult);
         // 设置缓存
         String loginCacheKey = LOGIN_CACHE_PREFIX + sceneStr;
         try {
-            redisTemplate.opsForValue().set(loginCacheKey, tokenInfo, 180, TimeUnit.SECONDS);
+            redisTemplate.opsForValue().set(loginCacheKey, authResult, 180, TimeUnit.SECONDS);
         } catch (Exception e) {
             log.error("LoginServiceImpl.setLoginResult,error,loginCacheKey:{}", loginCacheKey, e);
-            redisTemplate.opsForValue().set(loginCacheKey, tokenInfo, 180, TimeUnit.SECONDS);
+            redisTemplate.opsForValue().set(loginCacheKey, authResult, 180, TimeUnit.SECONDS);
         }
     }
 
@@ -161,7 +173,7 @@ public class LoginServiceImpl implements LoginService {
     }
 
     @Override
-    public TokenInfo verifyAndSignToken(String appCode, AuthTypeEnum authType, String identifier, String credential) {
+    public AuthResult verifyAndSignToken(String appCode, AuthTypeEnum authType, String identifier, String credential) {
         AuthPatternEntity authPattern = authPatternRepository.findByAppCodeAndIdentifierAndAuthType(appCode, identifier, authType.name());
         log.info("LoginServiceImpl.verifyAndSignToken,authPattern:{}", authPattern);
         if (Objects.isNull(authPattern)) {
@@ -182,9 +194,37 @@ public class LoginServiceImpl implements LoginService {
             authInfo.setSubject(authPattern.getAppCode());
             authInfo.setExpireAt(new Date(expireTime));
             authInfo.setIssuer(ISSUER);
-            return jwtissuer.generateToken(authInfo);
+            return getAuthResult(authInfo);
         }
         return null;
+    }
+
+    @Override
+    public AuthResult refreshToken(String refreshToken) {
+        AssertUtils.assertTrue(verifyRefreshToken(refreshToken), ResultCode.INVALID_PARAMS, "refreshToken不正确或已过期");
+        JWT jwt = JWTUtil.parseToken(refreshToken);
+        log.info("AuthGlobalFilter.filter,jwt token:{}", JSON.toJSONString(jwt));
+        AuthInfo authInfo = new AuthInfo();
+        authInfo.setIssuer(String.valueOf(jwt.getPayload("issuer")));
+        authInfo.setSubject(String.valueOf(jwt.getPayload("subject")));
+        authInfo.setIssuerFor(String.valueOf(jwt.getPayload("issuerFor")));
+        authInfo.setUid(String.valueOf(jwt.getPayload("uid")));
+        long currentTime = System.currentTimeMillis();
+        authInfo.setIssueAt(new Date(currentTime));
+        long expireTime = currentTime + 3600000;
+        authInfo.setExpireAt(new Date(expireTime));
+        return getAuthResult(authInfo);
+    }
+
+    private AuthResult getAuthResult(AuthInfo authInfo) {
+        long currentTime = System.currentTimeMillis();
+        TokenInfo authToken = jwtissuer.generateToken(authInfo, keyHolder.getCurrentKeyPair().getPrivateKey());
+
+        long refreshExpireTime = currentTime + 24 * 60 * 60 * 1000;
+        authInfo.setExpireAt(new Date(refreshExpireTime));
+        TokenInfo refreshTokenInfo = jwtissuer.generateToken(authInfo, keyHolder.getRefreshKeyPair().getPrivateKey());
+
+        return new AuthResult(authToken, refreshTokenInfo);
     }
 
     @Override
@@ -204,6 +244,40 @@ public class LoginServiceImpl implements LoginService {
 
         }
         loginRecordRepository.save(loginRecordEntity);
+    }
+
+    @Override
+    public boolean verifyRefreshToken(String token) {
+        // 1. 解析 JWT
+        JWT jwt;
+        try {
+            jwt = JWT.of(token);
+        } catch (Exception e) {
+            return false;
+        }
+
+        // 2. 验证签名
+        JWTSigner signer = JWTSignerUtil.rs512(keyHolder.getRefreshKeyPair().getPublicKey());
+        if (!jwt.verify(signer)) {
+            return false;
+        }
+
+        // 3. 手动解析时间字段
+        Date now = new Date();
+        Date exp = jwt.getPayloads().getDate(EXP);
+        Date nbf = jwt.getPayloads().getDate(NBF);
+
+        // 4. 检查 Token 是否已过期
+        if (exp != null && now.after(exp)) {
+            return false;
+        }
+
+        // 5. 检查 Token 是否已生效
+        if (nbf != null && now.before(nbf)) {
+            return false;
+        }
+
+        return true;
     }
 
     private LoginRecordEntity buildLoginRecordEntity(GetSceneQrCodeParam request, String sceneStr) {

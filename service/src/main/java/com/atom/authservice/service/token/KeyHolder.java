@@ -38,4 +38,11 @@ public interface KeyHolder {
      * @return RSA密钥
      */
     RSA getCurrentKeyPair();
+
+    /**
+     * 获取签发refreshToken的密钥对
+     *
+     * @return RSA密钥
+     */
+    RSA getRefreshKeyPair();
 }

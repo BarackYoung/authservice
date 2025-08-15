@@ -23,11 +23,20 @@ public class KeyHolderImpl implements KeyHolder {
     @Value("${authservice.auth.publicKeyBase64}")
     private String publicKeyBase64;
 
+    @Value("${authservice.auth.refresh.token.privateKeyBase64}")
+    private String refreshPrivateKeyBase64;
+
+    @Value("${authservice.auth.refresh.token.publicKeyBase64}")
+    private String refreshPublicKeyBase64;
+
     private RSA keyPair;
+
+    private RSA refreshKeyPair;
 
     @PostConstruct
     public void setUp() {
         this.keyPair = new RSA(privateKeyBase64, publicKeyBase64);
+        this.refreshKeyPair = new RSA(refreshPrivateKeyBase64, refreshPublicKeyBase64);
     }
 
     @Override
@@ -48,5 +57,10 @@ public class KeyHolderImpl implements KeyHolder {
     @Override
     public RSA getCurrentKeyPair() {
         return this.keyPair;
+    }
+
+    @Override
+    public RSA getRefreshKeyPair() {
+        return this.refreshKeyPair;
     }
 }

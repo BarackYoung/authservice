@@ -2,13 +2,12 @@ package com.atom.authservice.service.login;
 
 import com.atom.authservice.dal.entity.AccountEntity;
 import com.atom.authservice.dal.entity.AuthPatternEntity;
+import com.atom.authservice.service.login.bean.AuthResult;
 import com.atom.authservice.service.login.bean.GetSceneQrCodeParam;
 import com.atom.authservice.service.login.bean.SceneStrQrcodeInfo;
 import com.atom.authservice.service.login.enums.LoginStatusEnum;
 import com.atom.authservice.service.token.model.TokenInfo;
 import com.atom.authservice.service.login.enums.AuthTypeEnum;
-
-import java.util.Date;
 
 /**
  * 登录服务
@@ -31,7 +30,7 @@ public interface LoginService {
      * @param sceneStr 场景码
      * @return 登录结果
      */
-    TokenInfo checkLoginResult(String sceneStr);
+    AuthResult checkLoginResult(String sceneStr);
 
     /**
      * 设置登录结果
@@ -39,9 +38,9 @@ public interface LoginService {
      * @param sceneStr 场景值
      * @param appCode appCode
      * @param accountId 账号信息
-     * @param tokenInfo token信息
+     * @param authResult token信息
      */
-    void setLoginResult(String appCode, String accountId, String sceneStr, TokenInfo tokenInfo);
+    void setLoginResult(String appCode, String accountId, String sceneStr, AuthResult authResult);
 
     /**
      * 注册账号，并添加一个认证方法
@@ -87,7 +86,15 @@ public interface LoginService {
      * @param credential 校验码
      * @return Token
      */
-    TokenInfo verifyAndSignToken(String appCode, AuthTypeEnum authTypeEnum, String identifier, String credential);
+    AuthResult verifyAndSignToken(String appCode, AuthTypeEnum authTypeEnum, String identifier, String credential);
+
+    /**
+     * 使用refreshToken刷新token
+     *
+     * @param refreshToken refreshToken
+     * @return 刷新结果
+     */
+    AuthResult refreshToken(String refreshToken);
 
     /**
      * 更新登录记录
@@ -98,4 +105,12 @@ public interface LoginService {
      * @param loginStatus 登录状态
      */
     void updateLoginRecord(String loginId, String accountId, String identifier, LoginStatusEnum loginStatus);
+
+    /**
+     * 验证refreshToken
+     *
+     * @param token 请求token
+     * @return 是否校验通过
+     */
+    boolean verifyRefreshToken(String token);
 }
