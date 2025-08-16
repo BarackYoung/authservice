@@ -59,6 +59,10 @@ public class LoginImpl implements LoginAPI {
 
     @Override
     public CommonResponse<LoginResultResp> refreshLoginResult(String refreshToken) {
-        return null;
+        AuthResult authResult = loginService.refreshToken(refreshToken);
+        LoginResultResp loginResultResp = new LoginResultResp();
+        loginResultResp.setAuthToken(authResult.getAuthToken());
+        loginResultResp.setRefreshToken(authResult.getRefreshToken());
+        return CommonResponse.ofSuccess(loginResultResp);
     }
 }

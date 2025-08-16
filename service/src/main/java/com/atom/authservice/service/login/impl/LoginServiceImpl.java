@@ -209,15 +209,14 @@ public class LoginServiceImpl implements LoginService {
         authInfo.setSubject(String.valueOf(jwt.getPayload("subject")));
         authInfo.setIssuerFor(String.valueOf(jwt.getPayload("issuerFor")));
         authInfo.setUid(String.valueOf(jwt.getPayload("uid")));
-        long currentTime = System.currentTimeMillis();
-        authInfo.setIssueAt(new Date(currentTime));
-        long expireTime = currentTime + 3600000;
-        authInfo.setExpireAt(new Date(expireTime));
         return getAuthResult(authInfo);
     }
 
     private AuthResult getAuthResult(AuthInfo authInfo) {
         long currentTime = System.currentTimeMillis();
+        authInfo.setIssueAt(new Date(currentTime));
+        long expireTime = currentTime + 3600000;
+        authInfo.setExpireAt(new Date(expireTime));
         TokenInfo authToken = jwtissuer.generateToken(authInfo, keyHolder.getCurrentKeyPair().getPrivateKey());
 
         long refreshExpireTime = currentTime + 24 * 60 * 60 * 1000;
@@ -248,10 +247,12 @@ public class LoginServiceImpl implements LoginService {
 
     @Override
     public boolean verifyRefreshToken(String token) {
+        log.info("LoginServiceImpl.verifyRefreshToken,token:{}", token);
         // 1. 解析 JWT
         JWT jwt;
         try {
             jwt = JWT.of(token);
+            log.info("verifyRefreshToken:{}", JSON.toJSONString(jwt));
         } catch (Exception e) {
             return false;
         }
@@ -259,6 +260,7 @@ public class LoginServiceImpl implements LoginService {
         // 2. 验证签名
         JWTSigner signer = JWTSignerUtil.rs512(keyHolder.getRefreshKeyPair().getPublicKey());
         if (!jwt.verify(signer)) {
+            log.info("verifyRefreshToken.signer:{}", JSON.toJSONString(jwt));
             return false;
         }
 
@@ -269,11 +271,13 @@ public class LoginServiceImpl implements LoginService {
 
         // 4. 检查 Token 是否已过期
         if (exp != null && now.after(exp)) {
+            log.info("verifyRefreshToken.exp:{},nbf:{}", exp, nbf);
             return false;
         }
 
         // 5. 检查 Token 是否已生效
         if (nbf != null && now.before(nbf)) {
+            log.info("verifyRefreshToken.exp:{},nbf:{}", exp, nbf);
             return false;
         }
 
