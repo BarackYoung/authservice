@@ -37,14 +37,10 @@ public class JWTIssuerImpl implements JWTIssuer {
                 .addHeaders(authInfo.generateHeader())
                 .setExpiresAt(authInfo.getExpireAt());
         log.info("JWTIssuerImpl.JWT token: {}", JSON.toJSONString(jwt));
-        JWTSigner signer = JWTSignerUtil.rs512(keyHolder.getCurrentKeyPair().getPrivateKey());
+        JWTSigner signer = JWTSignerUtil.rs512(key);
         String token = jwt.sign(signer);
         TokenInfo tokenInfo = new TokenInfo();
         tokenInfo.setToken(token);
-        tokenInfo.setIssuer(authInfo.getIssuer());
-        tokenInfo.setExpiresAt(authInfo.getExpireAt());
-        tokenInfo.setIssueFor(authInfo.getIssuerFor());
-        tokenInfo.setIssuedAt(authInfo.getIssueAt());
         tokenInfo.setAuthInfo(authInfo);
         return tokenInfo;
     }

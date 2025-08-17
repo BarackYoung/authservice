@@ -36,6 +36,7 @@ import com.atom.commonsdk.wechat.bean.request.CreateQrCodeRequest;
 import com.atom.commonsdk.wechat.bean.response.CreateQrCodeResponse;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -63,6 +64,10 @@ public class LoginServiceImpl implements LoginService {
     private static final String EXP = "exp";
     private static final String NBF = "nbf";
     private static final String LOGIN_CACHE_PREFIX = "authsService:LoginServiceImpl:";
+    private static final String ISSUER_KW = "issuer";
+    private static final String SUBJECT_KW = "subject";
+    private static final String ISSUER_FOR_KW = "issuerFor";
+    private static final String UID_KW = "uid";
 
     @Resource
     private WeQrCodeService qrCodeService;
@@ -188,11 +193,7 @@ public class LoginServiceImpl implements LoginService {
             AuthInfo authInfo = new AuthInfo();
             authInfo.setIssuerFor(authPattern.getAccountId());
             authInfo.setUid(accountEntity.getUid());
-            long currentTime = System.currentTimeMillis();
-            long expireTime = currentTime + 3600000;
-            authInfo.setIssueAt(new Date(currentTime));
             authInfo.setSubject(authPattern.getAppCode());
-            authInfo.setExpireAt(new Date(expireTime));
             authInfo.setIssuer(ISSUER);
             return getAuthResult(authInfo);
         }
@@ -205,10 +206,11 @@ public class LoginServiceImpl implements LoginService {
         JWT jwt = JWTUtil.parseToken(refreshToken);
         log.info("AuthGlobalFilter.filter,jwt token:{}", JSON.toJSONString(jwt));
         AuthInfo authInfo = new AuthInfo();
-        authInfo.setIssuer(String.valueOf(jwt.getPayload("issuer")));
-        authInfo.setSubject(String.valueOf(jwt.getPayload("subject")));
-        authInfo.setIssuerFor(String.valueOf(jwt.getPayload("issuerFor")));
-        authInfo.setUid(String.valueOf(jwt.getPayload("uid")));
+        authInfo.setIssuer(String.valueOf(jwt.getPayload(ISSUER)));
+        authInfo.setSubject(String.valueOf(jwt.getPayload(SUBJECT_KW)));
+        authInfo.setIssuerFor(String.valueOf(jwt.getPayload(ISSUER_FOR_KW)));
+        authInfo.setUid(String.valueOf(jwt.getPayload(UID_KW)));
+        log.info("LoginServiceImpl.refreshToken,authInfo:{}", JSON.toJSONString(authInfo));
         return getAuthResult(authInfo);
     }
 
@@ -216,12 +218,15 @@ public class LoginServiceImpl implements LoginService {
         long currentTime = System.currentTimeMillis();
         authInfo.setIssueAt(new Date(currentTime));
         long expireTime = currentTime + 3600000;
+        authInfo.setIssueAt(new Date(currentTime));
         authInfo.setExpireAt(new Date(expireTime));
         TokenInfo authToken = jwtissuer.generateToken(authInfo, keyHolder.getCurrentKeyPair().getPrivateKey());
 
+        AuthInfo refreshAuthInfo = new AuthInfo();
+        BeanUtils.copyProperties(authToken, refreshAuthInfo);
         long refreshExpireTime = currentTime + 24 * 60 * 60 * 1000;
-        authInfo.setExpireAt(new Date(refreshExpireTime));
-        TokenInfo refreshTokenInfo = jwtissuer.generateToken(authInfo, keyHolder.getRefreshKeyPair().getPrivateKey());
+        refreshAuthInfo.setExpireAt(new Date(refreshExpireTime));
+        TokenInfo refreshTokenInfo = jwtissuer.generateToken(refreshAuthInfo, keyHolder.getRefreshKeyPair().getPrivateKey());
 
         return new AuthResult(authToken, refreshTokenInfo);
     }

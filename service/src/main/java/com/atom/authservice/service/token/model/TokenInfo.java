@@ -26,12 +26,4 @@ public class TokenInfo implements Serializable {
     private String token;
 
     private AuthInfo authInfo;
-
-    private Date expiresAt;
-
-    private String issuer;
-
-    private Date issuedAt;
-
-    private String issueFor;
 }
