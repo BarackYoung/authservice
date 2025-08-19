@@ -223,7 +223,7 @@ public class LoginServiceImpl implements LoginService {
         TokenInfo authToken = jwtissuer.generateToken(authInfo, keyHolder.getCurrentKeyPair().getPrivateKey());
 
         AuthInfo refreshAuthInfo = new AuthInfo();
-        BeanUtils.copyProperties(authToken, refreshAuthInfo);
+        BeanUtils.copyProperties(authInfo, refreshAuthInfo);
         long refreshExpireTime = currentTime + 24 * 60 * 60 * 1000;
         refreshAuthInfo.setExpireAt(new Date(refreshExpireTime));
         TokenInfo refreshTokenInfo = jwtissuer.generateToken(refreshAuthInfo, keyHolder.getRefreshKeyPair().getPrivateKey());
