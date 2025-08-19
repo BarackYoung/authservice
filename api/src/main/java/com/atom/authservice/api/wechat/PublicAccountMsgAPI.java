@@ -11,7 +11,7 @@ import org.apache.dubbo.remoting.http12.rest.Param;
  * @data: 2025/7/27
  * @author: yang lianhuan
  */
-@Mapping(path = "v1/wechat/account")
+@Mapping(path = "public/v1/wechat/account")
 public interface PublicAccountMsgAPI {
 
     @Mapping(path = "/msg", method = HttpMethods.GET)
